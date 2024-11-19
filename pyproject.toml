@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simses-lite"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy",
+    "pandas>=2.2.3",
+    "scipy",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.7.4"]
+
+[tool.ruff]
+# Allow lines to be as long as 120.
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "A",      # flake8-builtins: Check for Python builtins being used as variables or parameters
+    "B",      # flake8-bugbear: Find likely bugs and design problems
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes: Detect various errors by parsing the source file
+    "I",      # isort: Check and enforce import ordering
+    "ISC",    # flake8-implicit-str-concat: Check for implicit string concatenation
+    "TID",    # flake8-tidy-imports: Validate import hygiene
+    "UP",     # pyupgrade: Automatically upgrade syntax for newer versions of Python
+    "SLF001", # flake8-string-format: Check for private object name access
+]
+ignore = [
+    "E501", # line-length violations
+    "E741", # ambiguous variable name
+]
