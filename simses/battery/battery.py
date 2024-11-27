@@ -72,6 +72,7 @@ class Battery:
         # update soc, ocv and rint based on previous state
         delta_t = (t - state.t) / 3600  # in h
         soc = state.soc + state.i * delta_t / (self.nominal_capacity * state.soh_Q)
+        soc = max(min(self._soc_limits),min(max(self._soc_limits), soc))                                                       #clamps the soc value between soc limits
         ocv = self.open_circuit_voltage(state)
         hys = self.hystheresis_voltage(state)
         rint = self.internal_resistance(state) * state.soh_R
