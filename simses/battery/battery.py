@@ -62,11 +62,16 @@ class Battery:
         cell_voltage = cell.electrical.nominal_voltage
         cell_charge_capacity = cell.electrical.nominal_capacity
 
-        # if exact_size:
-        # TODO: not exact_size
-        serial = voltage / cell_voltage
-        parallel = energy_capacity / voltage / cell_charge_capacity
-        return serial, parallel
+        if(exact_size):
+            serial = voltage / cell_voltage
+            parallel = energy_capacity / voltage / cell_charge_capacity
+            return serial, parallel
+        else:
+            serial = max(1, round(voltage/cell_voltage))    #sets serial to closest matching cell count, but at least 1 TODO maybe use math.ceil, so voltage cannot be below given value
+            self.voltage = serial * cell_voltage            #set battery voltage according to calculated serial cell count
+            parallel = max(1, round(energy_capacity / self.voltage / cell_charge_capacity))     #sets parallel to closest count, but at least 1 TODO math.ceil so cap cannot be below given value?
+            self.energy_capacity = parallel * self.voltage * cell_charge_capacity               #sets capacity accoring to calculated circuit
+            return serial, parallel
 
     def update(self, state: BatteryState, power_setpoint, t) -> BatteryState:
         # update soc, ocv and rint based on previous state
