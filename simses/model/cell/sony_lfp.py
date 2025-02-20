@@ -42,10 +42,10 @@ class SonyLFP(CellType):
         )
         # path, _ = os.path.split(os.path.abspath(__file__))
         # path = Path(path)
-        path = "simses/model/cell/data/"
+        path = os.path.dirname(os.path.abspath(__file__))
 
         ## internal resistance 2D look-up table
-        file = os.path.join(path, "CLFP_Sony_US26650_Rint.csv")
+        file = os.path.join(path, "data", "CLFP_Sony_US26650_Rint.csv")
         df_rint = pd.read_csv(file)
 
         soc_rint = df_rint["SOC"]
