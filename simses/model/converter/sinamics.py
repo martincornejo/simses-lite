@@ -51,7 +51,7 @@ class SinamicsS120:
 
         # check if subsystem fullfilled DC power
         # if not, re-calculate required AC power
-        if (abs(power_dc - power_storage) / abs(power_dc)) > 0.01:  # 1% difference tolerance
+        if power_dc != 0 and (abs(power_dc - power_storage) / abs(power_dc)) > 0.01:  # 1% difference tolerance
             power_dc = power_storage
             power_ac = float(self.dc_to_ac(power_dc))
 
