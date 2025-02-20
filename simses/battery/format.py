@@ -9,6 +9,21 @@ class CellFormat:
 
 
 @dataclass
+class PrismaticCell(CellFormat):
+    height: float
+    width: float
+    length: float
+
+    def __post_init__(self):
+        h = self.height
+        w = self.width
+        l = self.length
+
+        self.volume = h * w * l * 1e-9  # m³
+        self.area = 2 * (l * h + l * w + w * h) * 1e-6  # m²
+
+
+@dataclass
 class RoundCell(CellFormat):
     diameter: float  # in mm
     length: float  # in mm
