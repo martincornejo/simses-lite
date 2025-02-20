@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel", "build"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -34,3 +34,9 @@ ignore = [
     "E501", # line-length violations
     "E741", # ambiguous variable name
 ]
+
+[tool.setuptools]
+include_package_data = true
+
+[tool.setuptools.package_data]
+simses = ["*.csv"]
