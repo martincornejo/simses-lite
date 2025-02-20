@@ -68,9 +68,11 @@ class Battery:
                 Timestep in s
         """
         state: BatteryState = self.state
+        (soc_min, soc_max) = self.soc_limits
 
         # update soc, ocv and rint based on previous state
         soc = state.soc + state.i * dt / (self.nominal_capacity * state.soh_Q) / 3600
+        soc = max(soc_min, min(soc, soc_max))
         ocv = self.open_circuit_voltage(state)
         hys = self.hystheresis_voltage(state)
         rint = self.internal_resistance(state) * state.soh_R
