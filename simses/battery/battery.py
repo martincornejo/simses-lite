@@ -18,33 +18,22 @@ class BatteryState:
     soh_Q: float  # p.u.
     soh_R: float  # p.u.
     is_charge: bool
-    # loss (irreversible / reversible)
+    loss: float  # in W
+    # reversible heat
 
 
 class Battery:
     def __init__(
         self,
         cell: CellType,
-        voltage: float,  # in V
-        energy_capacity: float,  # in Wh
+        circuit: tuple[int, int],  # (s, p)
+        initial_states: dict,
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
     ) -> None:
         self.cell = cell
-        self.voltage = voltage
-        self.energy_capacity = energy_capacity
-        self._soc_limits = soc_limits  # TODO assert input
-
-        self._circuit = self._calculate_circuit(cell, voltage, energy_capacity)
-
-    def _calculate_circuit(self, cell, voltage, energy_capacity, exact_size=False) -> tuple[float, float]:
-        cell_voltage = cell.electrical.nominal_voltage
-        cell_charge_capacity = cell.electrical.nominal_capacity
-
-        # if exact_size:
-        # TODO: not exact_size
-        serial = voltage / cell_voltage
-        parallel = energy_capacity / voltage / cell_charge_capacity
-        return serial, parallel
+        self.circuit = circuit
+        self.soc_limits = soc_limits
+        self.state = self.initialize_state(**initial_states)
 
     def initialize_state(
         self, start_soc: float, start_T: float, start_soh_Q: float = 1.0, start_soh_R: float = 1.0
@@ -55,6 +44,7 @@ class Battery:
             T=start_T,
             power=0,
             power_setpoint=0,
+            loss=0,
             soc=start_soc,
             ocv=0,  # uninitialized
             hys=0,  # uninitialized
@@ -68,7 +58,7 @@ class Battery:
         state.rint = self.internal_resistance(state) * start_soh_R
         return state
 
-    def update(self, state: BatteryState, power_setpoint, dt) -> BatteryState:
+    def update(self, power_setpoint, dt) -> None:
         """
         Input
             state: BatteryState
@@ -77,15 +67,17 @@ class Battery:
             dt: float
                 Timestep in s
         """
+        state: BatteryState = self.state
+
         # update soc, ocv and rint based on previous state
-        soc = state.soc + state.i * dt / (self.nominal_capacity * state.soh_Q)
+        soc = state.soc + state.i * dt / (self.nominal_capacity * state.soh_Q) / 3600
         ocv = self.open_circuit_voltage(state)
         hys = self.hystheresis_voltage(state)
         rint = self.internal_resistance(state) * state.soh_R
         Q = state.soh_Q * self.nominal_capacity
 
         # update degradation based on previous state
-        # soh_Q = state.soh_Q  # self.cell.capacity_loss(state)
+        soh_Q = state.soh_Q  # self.cell.capacity_loss(state)
         # soh_R = state.soh_R  # self.cell.resistance_increase(state)
 
         # calculate current to fullfil power by solving the quadratic equation (-b +/- sqrt(b^2 - 4 * a * c)) / (2 * a)
@@ -105,7 +97,7 @@ class Battery:
         power = v * i
 
         # update losses
-        # rint_loss = rint * i**2
+        rint_loss = rint * i**2
         # hys_loss = abs(ocv - hys) * i # ?
         # reversible loss ?
 
@@ -113,21 +105,23 @@ class Battery:
         # T = state.T
 
         # update state
-        state.v = v
-        state.i = i
-        state.power = power
-        state.power_setpoint = power_setpoint
-        state.soc = soc
-        state.hys = hys
-        state.rint = rint
-        # state.soh_Q = soh_Q
-        # state.soh_R = soh_R
-        state.is_charge = is_charge
-        return state
+        self.state.v = v
+        self.state.i = i
+        self.state.power = power
+        self.state.power_setpoint = power_setpoint
+        self.state.loss = rint_loss
+        self.state.soc = soc
+        self.state.ocv = ocv
+        # self.state.hys = hys
+        self.state.rint = rint
+        # self.state.soh_Q = soh_Q
+        # self.state.soh_R = soh_R
+        self.state.is_charge = is_charge
+        # return state
         # return BatteryState(v, i, T, power, power_setpoint, soc, ocv, hys, rint, soh_Q, soh_R, is_charge)
 
     def _get_maximum_current(self, i, dt, soc, ocv, hys, rint, Q, soh_Q) -> float:
-        (soc_min, soc_max) = self._soc_limits
+        (soc_min, soc_max) = self.soc_limits
 
         if i == 0:  # rest
             i_max = 0.0
@@ -142,7 +136,7 @@ class Battery:
 
             # soc limits
             delta_soc_max = soc_max - soc
-            i_max_soc_lim = delta_soc_max * Q / dt
+            i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
 
             # limits
             i_max = min(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
@@ -158,7 +152,7 @@ class Battery:
             # soc_limits
             delta_soc_max = soc_min - soc
             Q = soh_Q * self.nominal_capacity
-            i_max_soc_lim = delta_soc_max * Q / dt
+            i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
 
             # limit
             i_max = max(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
@@ -167,27 +161,32 @@ class Battery:
 
     ## electrical properties
     def open_circuit_voltage(self, state):
-        (serial, parallel) = self._circuit
-        return self.cell.open_circuit_voltage(state) * parallel
+        (serial, parallel) = self.circuit
+
+        return self.cell.open_circuit_voltage(state) * serial
 
     def hystheresis_voltage(self, state):
-        (serial, parallel) = self._circuit
-        return self.cell.hystheresis_voltage(state) * parallel
+        (serial, parallel) = self.circuit
+
+        return self.cell.hystheresis_voltage(state) * serial
 
     def internal_resistance(self, state):
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         # state.i = state.i / parallel # <- should be scaled to the cell
         return self.cell.internal_resistance(state) / parallel * serial
 
     @property
     def nominal_capacity(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.nominal_capacity * parallel
 
     @property
     def nominal_voltage(self) -> float:
         # TODO: is this required?
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.nominal_voltage * serial
 
     @property
@@ -196,22 +195,26 @@ class Battery:
 
     @property
     def min_voltage(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.min_voltage * serial
 
     @property
     def max_voltage(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.max_voltage * serial
 
     @property
     def max_charge_current(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.nominal_capacity * self.cell.electrical.max_discharge_rate * parallel
 
     @property
     def max_discharge_current(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.electrical.nominal_capacity * self.cell.electrical.max_discharge_rate * parallel
 
     @property
@@ -221,7 +224,8 @@ class Battery:
     ## thermal properties
     @property
     def specific_heat(self) -> float:
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.thermal.specific_heat * self.cell.thermal.mass * serial * parallel
 
     @property
@@ -240,11 +244,13 @@ class Battery:
     @property
     def volume(self) -> float:
         # TODO: is this required?
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.format.volume * serial * parallel
 
     @property
     def area(self) -> float:
         # TODO: is this required?
-        (serial, parallel) = self._circuit
+        (serial, parallel) = self.circuit
+
         return self.cell.format.area * serial * parallel
