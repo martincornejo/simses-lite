@@ -55,7 +55,7 @@ class Battery:
         )
         state.ocv = state.v = self.open_circuit_voltage(state)
         state.hys = self.hystheresis_voltage(state)
-        state.rint = self.internal_resistance(state) * start_soh_R
+        state.rint = self.internal_resistance(state)
         return state
 
     def update(self, power_setpoint, dt) -> None:
@@ -68,28 +68,19 @@ class Battery:
                 Timestep in s
         """
         state: BatteryState = self.state
-        (soc_min, soc_max) = self.soc_limits
 
         # update soc, ocv and rint based on previous state
-        soc = state.soc + state.i * dt / (self.nominal_capacity * state.soh_Q) / 3600
-        soc = max(soc_min, min(soc, soc_max))
         ocv = self.open_circuit_voltage(state)
         hys = self.hystheresis_voltage(state)
-        rint = self.internal_resistance(state) * state.soh_R
-        Q = state.soh_Q * self.nominal_capacity
+        rint = self.internal_resistance(state)
+        Q = self.capacity(state)
 
-        # update degradation based on previous state
-        soh_Q = state.soh_Q  # self.cell.capacity_loss(state)
-        # soh_R = state.soh_R  # self.cell.resistance_increase(state)
+        i = self.equilibrium_current(state, power_setpoint, dt)  # TODO: improve?
 
-        # calculate current to fullfil power by solving the quadratic equation (-b +/- sqrt(b^2 - 4 * a * c)) / (2 * a)
-        # only one of the roots is feasible
-        # p = i * v
-        #   = i * (ocv - r * i) <- find i
-        i = -(ocv - math.sqrt(ocv**2 + 4 * rint * power_setpoint)) / (2 * rint)
-
-        # check current limits / voltage limits / soc limits
-        i = self._get_maximum_current(i, dt, soc, ocv, hys, rint, Q, soh_Q)  # TODO: improve?
+        # update soc
+        (soc_min, soc_max) = self.soc_limits
+        soc = state.soc + i * dt / Q / 3600
+        soc = max(soc_min, min(soc, soc_max))
 
         # check current direction, maintain previous state if in rest
         is_charge = state.is_charge if i == 0 else i > 0
@@ -103,9 +94,6 @@ class Battery:
         # hys_loss = abs(ocv - hys) * i # ?
         # reversible loss ?
 
-        # update temperature
-        # T = state.T
-
         # update state
         self.state.v = v
         self.state.i = i
@@ -114,19 +102,41 @@ class Battery:
         self.state.loss = rint_loss
         self.state.soc = soc
         self.state.ocv = ocv
-        # self.state.hys = hys
+        self.state.hys = hys
         self.state.rint = rint
-        # self.state.soh_Q = soh_Q
-        # self.state.soh_R = soh_R
         self.state.is_charge = is_charge
-        # return state
-        # return BatteryState(v, i, T, power, power_setpoint, soc, ocv, hys, rint, soh_Q, soh_R, is_charge)
 
-    def _get_maximum_current(self, i, dt, soc, ocv, hys, rint, Q, soh_Q) -> float:
+    def equilibrium_current(self, state: BatteryState, power_setpoint: float, dt: float) -> float:
+        """
+        Calculates the battery current that fullfils the power setpoint and curtails it if above the allowed technical limits (de-rating).
+
+        The equilibrium current is calculated based on the equivalent circuit model
+        p = i * v
+          = i * (ocv - r * i)
+
+        The maximum current is based on the cell charge/discharge C-rate limits, cell voltage limits, and specified SOC limits.
+        """
+
+        if power_setpoint == 0.0:
+            return 0.0  # i = 0
+
+        # battery state
         (soc_min, soc_max) = self.soc_limits
+        soc = state.soc
+        ocv = self.open_circuit_voltage(state)
+        hys = self.hystheresis_voltage(state)
+        rint = self.internal_resistance(state)
+        Q = self.capacity(state)
 
+        # calculate current to fullfil power by solving the quadratic equation (-b +/- sqrt(b^2 - 4 * a * c)) / (2 * a)
+        # only one of the roots is feasible
+        # p = i * v
+        #   = i * (ocv - r * i) <- find i
+        i = -(ocv - math.sqrt(ocv**2 + 4 * rint * power_setpoint)) / (2 * rint)
+
+        # check current limits / voltage limits / soc limits
         if i == 0:  # rest
-            i_max = 0.0
+            i = 0.0
 
         elif i > 0:  # charge
             # current limits
@@ -141,7 +151,7 @@ class Battery:
             i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
 
             # limits
-            i_max = min(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
+            i = min(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
 
         else:  # discharge
             # current limits
@@ -153,13 +163,12 @@ class Battery:
 
             # soc_limits
             delta_soc_max = soc_min - soc
-            Q = soh_Q * self.nominal_capacity
             i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
 
             # limit
-            i_max = max(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
+            i = max(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
 
-        return i_max
+        return i
 
     ## electrical properties
     def open_circuit_voltage(self, state):
@@ -176,7 +185,13 @@ class Battery:
         (serial, parallel) = self.circuit
 
         # state.i = state.i / parallel # <- should be scaled to the cell
-        return self.cell.internal_resistance(state) / parallel * serial
+        return self.cell.internal_resistance(state) / parallel * serial * state.soh_R
+
+    def capacity(self, state):
+        return self.nominal_capacity * state.soh_Q
+
+    def energy_capacity(self, state):
+        return self.nominal_energy_capacity * state.soh_Q
 
     @property
     def nominal_capacity(self) -> float:
