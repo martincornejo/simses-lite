@@ -33,7 +33,8 @@ class SinamicsS120:
         output_ch = input_ch * df_eff["Charging"][::10]  # take every 10 item of the lookup table
 
         input_dch = max_power * np.linspace(0, 1, 101)
-        output_dch = input_dch / df_eff["Discharging"][::10]  # take every 10 item of the lookup table
+        # output_dch = input_dch / df_eff["Discharging"][::10]  # take every 10 item of the lookup table
+        output_dch = input_dch / df_eff["Charging"][::10]  # take every 10 item of the lookup table
 
         inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:]))
         out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:]))
