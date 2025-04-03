@@ -88,7 +88,7 @@ class SinamicsS120Fit:
         output_ch = input_ch - loss(input_ch)
 
         input_dch = -max_power * np.linspace(0, 1, 101)
-        output_dch = input_ch - loss(input_dch)
+        output_dch = input_dch - loss(input_dch)
 
         inp = np.hstack((input_dch[1:][::-1], 0, input_ch[1:]))
         out = np.hstack((output_dch[1:][::-1], 0, output_ch[1:]))
