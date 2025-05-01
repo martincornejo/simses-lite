@@ -60,4 +60,4 @@ class Samsung94AhNMC(CellType):
         return ocv
 
     def internal_resistance(self, state: BatteryState) -> float:
-        return 0.75e-3
+        return 0.819e-3
