@@ -7,7 +7,7 @@ import pandas as pd
 from scipy.interpolate import RegularGridInterpolator
 
 from simses.battery.battery import BatteryState
-from simses.battery.cell import CellType
+from simses.battery.battery import CellType
 from simses.battery.format import RoundCell26650
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 

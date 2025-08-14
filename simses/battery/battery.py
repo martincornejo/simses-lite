@@ -1,25 +1,7 @@
 import math
-from dataclasses import dataclass
 
 from simses.battery.cell import CellType
-
-
-@dataclass(slots=True)
-class BatteryState:
-    v: float  # V
-    i: float  # A
-    T: float  # K
-    power: float  # W
-    power_setpoint: float  # W
-    soc: float  # p.u.
-    ocv: float  # V
-    hys: float  # V
-    rint: float  # ohm
-    soh_Q: float  # p.u.
-    soh_R: float  # p.u.
-    is_charge: bool
-    loss: float  # in W
-    # reversible heat
+from simses.battery.state import BatteryState
 
 
 class Battery:
@@ -68,6 +50,8 @@ class Battery:
                 Timestep in s
         """
         state: BatteryState = self.state
+        # update state
+        state.is_charge = power_setpoint > 0.0
 
         # update soc, ocv and rint based on previous state
         ocv = self.open_circuit_voltage(state)

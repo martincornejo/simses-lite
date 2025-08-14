@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from simses.battery.format import CellFormat
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
+from simses.battery.state import BatteryState
 
 
 class CellType(ABC):
@@ -17,14 +18,14 @@ class CellType(ABC):
         self.format = cell_format
 
     @abstractmethod
-    def open_circuit_voltage(self, state) -> float:
+    def open_circuit_voltage(self, state: BatteryState) -> float:
         pass
 
-    def hystheresis_voltage(self, state) -> float:
+    def hystheresis_voltage(self, state: BatteryState) -> float:
         return 0
 
     @abstractmethod
-    def internal_resistance(self, state) -> float:
+    def internal_resistance(self, state: BatteryState) -> float:
         "BOL internal resistance"
         pass
 
