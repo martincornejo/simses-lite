@@ -1,12 +1,7 @@
 import os
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from scipy.interpolate import make_interp_spline
-
-# TODO make a subclass system
-# from simses.converter.converter import Converter
 
 
 class SinamicsS120:
@@ -25,17 +20,14 @@ class SinamicsS120:
         # output_dch = input_dch / df_eff["Discharging"][::10]  # take every 10 item of the lookup table
         output_dch = input_dch / df_eff["Charging"][::10]  # take every 10 item of the lookup table
 
-        inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:]))
-        out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:]))
-
-        self.ac_to_dc_lut = make_interp_spline(inp, out, k=1)
-        self.dc_to_ac_lut = make_interp_spline(out, inp, k=1)
+        self._inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:]))
+        self._out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:]))
 
     def ac_to_dc(self, power_ac: float) -> float:
-        return float(self.ac_to_dc_lut(power_ac))
+        return float(np.interp(power_ac, self._inp, self._out))
 
     def dc_to_ac(self, power_dc: float) -> float:
-        return float(self.dc_to_ac_lut(power_dc))
+        return float(np.interp(power_dc, self._out, self._inp))
 
 
 class SinamicsS120Fit:
@@ -59,14 +51,11 @@ class SinamicsS120Fit:
         input_dch = -np.linspace(0, 1, 101)
         output_dch = input_dch - loss(input_dch)
 
-        inp = np.hstack((input_dch[1:][::-1], 0, input_ch[1:]))
-        out = np.hstack((output_dch[1:][::-1], 0, output_ch[1:]))
-
-        self.ac_to_dc_lut = make_interp_spline(inp, out, k=1)
-        self.dc_to_ac_lut = make_interp_spline(out, inp, k=1)
+        self._inp = np.hstack((input_dch[1:][::-1], 0, input_ch[1:]))
+        self._out = np.hstack((output_dch[1:][::-1], 0, output_ch[1:]))
 
     def ac_to_dc(self, power_ac: float) -> float:
-        return float(self.ac_to_dc_lut(power_ac))
+        return float(np.interp(power_ac, self._inp, self._out))
 
     def dc_to_ac(self, power_dc: float) -> float:
-        return float(self.dc_to_ac_lut(power_dc))
+        return float(np.interp(power_dc, self._out, self._inp))
