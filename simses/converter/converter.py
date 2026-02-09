@@ -20,7 +20,7 @@ class Converter:
     def update(self, power_setpoint, dt):
         max_power = self.max_power
         power_ac = max(-max_power, min(power_setpoint, max_power))
-        power_dc = float(self.model.ac_to_dc(power_ac))
+        power_dc = self.ac_to_dc(power_ac)
 
         self.storage.update(power_dc, dt)
         power_storage = self.storage.state.power
@@ -29,7 +29,7 @@ class Converter:
         # if not, re-calculate required AC power
         if power_dc != 0 and (abs(power_dc - power_storage) / abs(power_dc)) > 0.01:  # 1% difference tolerance
             power_dc = power_storage
-            power_ac = float(self.dc_to_ac(power_dc))
+            power_ac = self.dc_to_ac(power_dc)
 
         # calculate conversion losses
         loss = power_ac - power_dc
