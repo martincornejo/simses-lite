@@ -5,12 +5,40 @@ from dataclasses import dataclass
 
 @dataclass
 class ConverterState:
+    """
+    Dataclass representing the state of a converter.
+
+    power_setpoint: float
+        Desired power setpoint for the converter in watts (W).
+    power: float
+        Actual power delivered by the converter in watts (W).
+    loss: float
+        Power loss of the converter in watts (W).
+    """
+
     power_setpoint: float = 0.0
     power: float = 0.0
     loss: float = 0.0
 
 
 class Converter:
+    """AC/DC converter that wraps a storage system with a loss model.
+
+    Clamps the AC power setpoint to the rated max_power, converts it to DC
+    using the loss model, and forwards it to the underlying storage.  If the
+    storage cannot fulfill the requested DC power, the converter recalculates
+    the actual AC power from the delivered DC power.
+
+    Attributes:
+        max_power (float): Rated maximum power of the converter in W.
+        state (ConverterState): Current converter state (power, setpoint, loss).
+        model: Loss model providing ac_to_dc and dc_to_ac conversion methods.
+        storage: Underlying storage system (e.g. Battery) with an update method.
+
+    Methods:
+        update(power_setpoint, dt): Apply a power setpoint over a timestep.
+    """
+
     def __init__(self, loss_model, max_power, storage) -> None:
         self.max_power = max_power
         self.state = ConverterState()

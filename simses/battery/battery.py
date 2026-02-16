@@ -5,6 +5,8 @@ from simses.battery.state import BatteryState
 
 
 class Battery:
+    """Battery system composed of cells in a series-parallel circuit."""
+
     def __init__(
         self,
         cell: CellType,
@@ -20,6 +22,7 @@ class Battery:
     def initialize_state(
         self, start_soc: float, start_T: float, start_soh_Q: float = 1.0, start_soh_R: float = 1.0
     ) -> BatteryState:
+        """Create the initial battery state from starting conditions."""
         state = BatteryState(
             v=0,  # uninitialized
             i=0,  # uninitialized
@@ -196,35 +199,42 @@ class Battery:
 
     ## electrical properties
     def open_circuit_voltage(self, state):
+        """Return the system-level open-circuit voltage in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.open_circuit_voltage(state) * serial
 
     def hystheresis_voltage(self, state):
+        """Return the system-level hysteresis voltage in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.hystheresis_voltage(state) * serial
 
     def internal_resistance(self, state):
+        """Return the system-level internal resistance in Ohms, scaled by SoH."""
         (serial, parallel) = self.circuit
 
         # state.i = state.i / parallel # <- should be scaled to the cell
         return self.cell.internal_resistance(state) / parallel * serial * state.soh_R
 
     def capacity(self, state):
+        """Return the current capacity in Ah, scaled by SoH."""
         return self.nominal_capacity * state.soh_Q
 
     def energy_capacity(self, state):
+        """Return the current energy capacity in Wh, scaled by SoH."""
         return self.nominal_energy_capacity * state.soh_Q
 
     @property
     def nominal_capacity(self) -> float:
+        """Nominal capacity of the battery system in Ah."""
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.nominal_capacity * parallel
 
     @property
     def nominal_voltage(self) -> float:
+        """Nominal voltage of the battery system in V."""
         # TODO: is this required?
         (serial, parallel) = self.circuit
 
@@ -232,16 +242,19 @@ class Battery:
 
     @property
     def nominal_energy_capacity(self) -> float:
+        """Nominal energy capacity of the battery system in Wh."""
         return self.nominal_capacity * self.nominal_voltage
 
     @property
     def min_voltage(self) -> float:
+        """Minimum allowed voltage of the battery system in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.min_voltage * serial
 
     @property
     def max_voltage(self) -> float:
+        """Maximum allowed voltage of the battery system in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.max_voltage * serial
@@ -266,42 +279,50 @@ class Battery:
 
     @property
     def max_charge_current(self) -> float:
+        """Maximum allowed charge current in A."""
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.nominal_capacity * self.cell.electrical.max_discharge_rate * parallel
 
     @property
     def max_discharge_current(self) -> float:
+        """Maximum allowed discharge current in A."""
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.nominal_capacity * self.cell.electrical.max_discharge_rate * parallel
 
     @property
     def coulomb_efficiency(self) -> float:
+        """Coulomb efficiency of the cell in p.u."""
         return self.cell.electrical.coulomb_efficiency
 
     ## thermal properties
     @property
     def specific_heat(self) -> float:
+        """Total thermal capacity of the battery system in J/K."""
         (serial, parallel) = self.circuit
 
         return self.cell.thermal.specific_heat * self.cell.thermal.mass * serial * parallel
 
     @property
     def convection_coefficient(self) -> float:
+        """Convection coefficient of the cell in W/m2K."""
         return self.cell.thermal.convection_coefficient
 
     @property
     def min_temperature(self) -> float:
+        """Minimum allowed temperature in K."""
         return self.cell.thermal.min_temperature
 
     @property
     def max_temperature(self) -> float:
+        """Maximum allowed temperature in K."""
         return self.cell.thermal.max_temperature
 
     ## cell format
     @property
     def volume(self) -> float:
+        """Total volume of all cells in m3."""
         # TODO: is this required?
         (serial, parallel) = self.circuit
 
@@ -309,6 +330,7 @@ class Battery:
 
     @property
     def area(self) -> float:
+        """Total surface area of all cells in m2."""
         # TODO: is this required?
         (serial, parallel) = self.circuit
 
