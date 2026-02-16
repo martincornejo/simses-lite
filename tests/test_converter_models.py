@@ -92,13 +92,6 @@ class TestLossModel:
                 f"AC->DC->AC did not return original AC power for input {power_ac}: got {power_ac_out} after conversion"
             )
 
-    def test_bidirectional_consistency_discharge(self, model):
-        """ac_to_dc and dc_to_ac should be (approximately) inverse operations."""
-        power_ac_in = -0.6
-        power_dc = model.ac_to_dc(power_ac_in)
-        power_ac_out = model.dc_to_ac(power_dc)
-        assert power_ac_out == pytest.approx(power_ac_in, rel=1e-3)
-
     def test_monotonic_charge(self, model):
         """Higher AC input should give higher DC output."""
         powers_ac = [0.0, 0.2, 0.5, 0.8, 1.0]
