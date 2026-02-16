@@ -152,7 +152,47 @@ class Battery:
             # limit
             i = max(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
 
+        # optional voltage derating based on terminal voltage
+        i = self._apply_linear_voltage_derating(i, ocv, hys, rint)
+
         return i
+
+    def _apply_linear_voltage_derating(self, i: float, ocv: float, hys: float, rint: float) -> float:
+        """Reduce current if the terminal voltage is in the derating zone.
+
+        After all other limits have been applied, the terminal voltage is
+        computed as v_terminal = ocv + hys + rint * i.  If it falls inside
+        the derating region the current is scaled down linearly:
+
+        Charge  (i > 0): between charge_derate_voltage_start and max_voltage
+        Discharge (i < 0): between discharge_derate_voltage_start and min_voltage
+        """
+        if i == 0.0:
+            return i
+
+        v = ocv + hys + rint * i
+
+        if i > 0:  # charge
+            derate_v = self.charge_derate_voltage_start
+            if derate_v is None:
+                return i
+            if v <= derate_v:
+                return i  # below derating zone
+            if v >= self.max_voltage:
+                return 0.0
+            factor = (self.max_voltage - v) / (self.max_voltage - derate_v)
+            return i * factor
+
+        else:  # discharge
+            derate_v = self.discharge_derate_voltage_start
+            if derate_v is None:
+                return i
+            if v >= derate_v:
+                return i  # above derating zone
+            if v <= self.min_voltage:
+                return 0.0
+            factor = (v - self.min_voltage) / (derate_v - self.min_voltage)
+            return i * factor
 
     ## electrical properties
     def open_circuit_voltage(self, state):
@@ -205,6 +245,24 @@ class Battery:
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.max_voltage * serial
+
+    @property
+    def charge_derate_voltage_start(self) -> float | None:
+        """System-level voltage at which charge derating begins, or None if disabled."""
+        v = self.cell.electrical.charge_derate_voltage_start
+        if v is None:
+            return None
+        (serial, parallel) = self.circuit
+        return v * serial
+
+    @property
+    def discharge_derate_voltage_start(self) -> float | None:
+        """System-level voltage at which discharge derating begins, or None if disabled."""
+        v = self.cell.electrical.discharge_derate_voltage_start
+        if v is None:
+            return None
+        (serial, parallel) = self.circuit
+        return v * serial
 
     @property
     def max_charge_current(self) -> float:

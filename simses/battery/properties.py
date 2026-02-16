@@ -20,6 +20,14 @@ class ElectricalCellProperties:
         self discharge rate in p.u. as X.X%-soc per day, e.g., 0.015 for 1.5% SOC loss per day
     coulomb_efficiency :
         coulomb efficiency of the cell in p.u.
+    charge_derate_voltage :
+        cell voltage at which charge current derating begins in V.
+        Current is linearly reduced from max_charge_current at this voltage to 0 at max_voltage.
+        None means no derating (default).
+    discharge_derate_voltage :
+        cell voltage at which discharge current derating begins in V.
+        Current is linearly reduced from max_discharge_current at this voltage to 0 at min_voltage.
+        None means no derating (default).
     """
 
     nominal_capacity: float
@@ -30,6 +38,8 @@ class ElectricalCellProperties:
     max_discharge_rate: float
     self_discharge_rate: float = 0.0
     coulomb_efficiency: float = 1.0
+    charge_derate_voltage_start: float | None = None
+    discharge_derate_voltage_start: float | None = None
 
 
 @dataclass
