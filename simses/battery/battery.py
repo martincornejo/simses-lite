@@ -332,8 +332,11 @@ class Battery:
 
     @property
     def area(self) -> float:
-        """Total surface area of all cells in m2."""
-        # TODO: is this required?
+        """Effective cooling area of all cells in m2.
+
+        Assumes prismatic cells are stacked so only the top and bottom faces
+        (2 * width * length) exchange heat with the environment.
+        """
         (serial, parallel) = self.circuit
 
-        return 2 * self.volume / self.cell.cell_format.height  # TODO: check for other formats other than prismatic
+        return 2 * self.volume / (self.cell.format.height * 1e-3)  # height mm -> m

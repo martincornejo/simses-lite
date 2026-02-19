@@ -81,6 +81,8 @@ def _state(soc: float = 0.5, T: float = 298.15, is_charge: bool = True) -> Batte
         soh_Q=1.0,
         soh_R=1.0,
         is_charge=is_charge,
+        i_max_charge=0,
+        i_max_discharge=0,
     )
 
 
