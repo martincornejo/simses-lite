@@ -17,6 +17,10 @@ class Battery:
         self.cell = cell
         self.circuit = circuit
         self.soc_limits = soc_limits
+        self.has_linear_derating = (
+            cell.electrical.charge_derate_voltage_start is not None
+            or cell.electrical.discharge_derate_voltage_start is not None
+        )
         self.state = self.initialize_state(**initial_states)
 
     def initialize_state(
@@ -37,6 +41,8 @@ class Battery:
             rint=0,  # uninitialized
             soh_Q=start_soh_Q,
             soh_R=start_soh_R,
+            i_max_charge=0.0,
+            i_max_discharge=0.0,
         )
         state.ocv = state.v = self.open_circuit_voltage(state)
         state.hys = self.hystheresis_voltage(state)
@@ -45,8 +51,10 @@ class Battery:
 
     def update(self, power_setpoint, dt) -> None:
         """
-        Input
-            state: BatteryState
+        Update the battery state based on a power setpoint and timestep.
+        If the battery cannot fulfill the power setpoint due to technical limits, it will curtail the current and update the state accordingly.
+
+            Args:
             power_sentpoint: float
                 Input power target in W
             dt: float
@@ -62,7 +70,27 @@ class Battery:
         rint = self.internal_resistance(state)
         Q = self.capacity(state)
 
-        i = self.equilibrium_current(state, power_setpoint, dt)  # TODO: improve?
+        # 1. Calculate equilibrium current to meet power setpoint
+        i = self.equilibrium_current(power_setpoint, ocv, hys, rint)
+
+        # 2. Calculate hard current limits (C-rate, voltage, SOC)
+        i_max_charge, i_max_discharge = self.calculate_max_currents(state, dt, ocv, hys, rint, Q)
+
+        # 3. Curtail solved current to hard limits
+        if i > 0:
+            i = min(i, i_max_charge)
+        elif i < 0:
+            i = max(i, i_max_discharge)
+
+        # 4. Calculate current limit based on linear voltage derating
+        if self.has_linear_derating:
+            i_max_derate = self.linear_voltage_derating(i, ocv, hys, rint)
+            if i > 0:
+                i_max_charge = min(i_max_charge, i_max_derate)
+                i = min(i, i_max_derate)
+            elif i < 0:
+                i_max_discharge = max(i_max_discharge, i_max_derate)
+                i = max(i, i_max_derate)
 
         # update soc
         (soc_min, soc_max) = self.soc_limits
@@ -92,75 +120,44 @@ class Battery:
         self.state.hys = hys
         self.state.rint = rint
         self.state.is_charge = is_charge
+        self.state.i_max_charge = i_max_charge
+        self.state.i_max_discharge = i_max_discharge
 
-    def equilibrium_current(self, state: BatteryState, power_setpoint: float, dt: float) -> float:
+    def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
         """
-        Calculates the battery current that fullfils the power setpoint and curtails it if above the allowed technical limits (de-rating).
+        Calculates the battery current that fullfils the power setpoint.
 
         The equilibrium current is calculated based on the equivalent circuit model
         p = i * v
-          = i * (ocv - r * i)
-
-        The maximum current is based on the cell charge/discharge C-rate limits, cell voltage limits, and specified SOC limits.
+          = i * (ocv + rint * i)
         """
-
+        ocv = ocv + hys  # include hysteresis in equilibrium calculation
         if power_setpoint == 0.0:
-            return 0.0  # i = 0
+            return 0.0
+        return -(ocv - math.sqrt(ocv**2 + 4 * rint * power_setpoint)) / (2 * rint)
 
-        # battery state
+    def calculate_max_currents(
+        self, state: BatteryState, dt: float, ocv: float, hys: float, rint: float, Q: float
+    ) -> tuple[float, float]:
+        """Return (i_max_charge, i_max_discharge) based on C-rate, voltage and SOC limits."""
         (soc_min, soc_max) = self.soc_limits
         soc = state.soc
-        ocv = self.open_circuit_voltage(state)
-        hys = self.hystheresis_voltage(state)
-        rint = self.internal_resistance(state)
-        Q = self.capacity(state)
 
-        # calculate current to fullfil power by solving the quadratic equation (-b +/- sqrt(b^2 - 4 * a * c)) / (2 * a)
-        # only one of the roots is feasible
-        # p = i * v
-        #   = i * (ocv - r * i) <- find i
-        i = -(ocv - math.sqrt(ocv**2 + 4 * rint * power_setpoint)) / (2 * rint)
+        # charge (all three values are positive; min = most restrictive)
+        i_max_charge = min(
+            self.max_charge_current,  # C-rate limit
+            (self.max_voltage - ocv - hys) / rint,  # voltage limit
+            (soc_max - soc) * Q / (dt / 3600),  # SOC limit
+        )
+        # discharge (all three values are negative; max = least negative = most restrictive)
+        i_max_discharge = max(
+            -self.max_discharge_current,  # C-rate limit
+            (self.min_voltage - ocv - hys) / rint,  # voltage limit
+            (soc_min - soc) * Q / (dt / 3600),  # SOC limit
+        )
+        return i_max_charge, i_max_discharge
 
-        # check current limits / voltage limits / soc limits
-        if i == 0:  # rest
-            i = 0.0
-
-        elif i > 0:  # charge
-            # current limits
-            i_max_i_lim = self.max_charge_current
-
-            # voltage limits
-            delta_v_max = self.max_voltage - ocv - hys
-            i_max_v_lim = delta_v_max / rint
-
-            # soc limits
-            delta_soc_max = soc_max - soc
-            i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
-
-            # limits
-            i = min(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
-
-        else:  # discharge
-            # current limits
-            i_max_i_lim = -self.max_discharge_current
-
-            # voltage limits
-            delta_v_max = self.min_voltage - ocv - hys
-            i_max_v_lim = delta_v_max / rint
-
-            # soc_limits
-            delta_soc_max = soc_min - soc
-            i_max_soc_lim = delta_soc_max * Q / (dt / 3600)
-
-            # limit
-            i = max(i, i_max_i_lim, i_max_v_lim, i_max_soc_lim)
-
-        # optional voltage derating based on terminal voltage
-        i = self._apply_linear_voltage_derating(i, ocv, hys, rint)
-
-        return i
-
-    def _apply_linear_voltage_derating(self, i: float, ocv: float, hys: float, rint: float) -> float:
+    def linear_voltage_derating(self, i: float, ocv: float, hys: float, rint: float) -> float:
         """Reduce current if the terminal voltage is in the derating zone.
 
         After all other limits have been applied, the terminal voltage is

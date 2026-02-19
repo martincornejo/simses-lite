@@ -32,6 +32,10 @@ class BatteryState:
         True if the battery is charging, False if discharging.
     loss: float
         Power loss of the battery in watts (W).
+    i_max_charge: float
+        Theoretical maximum charge current this timestep in amperes (A).
+    i_max_discharge: float
+        Theoretical maximum discharge current this timestep in amperes (A). Negative value.
     """
 
     v: float  # V
@@ -47,4 +51,6 @@ class BatteryState:
     soh_R: float  # p.u.
     is_charge: bool
     loss: float  # W
+    i_max_charge: float  # A
+    i_max_discharge: float  # A
     # reversible heat
