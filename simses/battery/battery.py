@@ -295,7 +295,7 @@ class Battery:
 
     ## thermal properties
     @property
-    def specific_heat(self) -> float:
+    def thermal_capacity(self) -> float:
         """Total thermal capacity of the battery system in J/K."""
         (serial, parallel) = self.circuit
 
@@ -305,6 +305,11 @@ class Battery:
     def convection_coefficient(self) -> float:
         """Convection coefficient of the cell in W/m2K."""
         return self.cell.thermal.convection_coefficient
+
+    @property
+    def thermal_resistance(self) -> float:
+        """Thermal resistance of the battery system in K/W."""
+        return 1 / (self.convection_coefficient * self.area)
 
     @property
     def min_temperature(self) -> float:
@@ -331,4 +336,4 @@ class Battery:
         # TODO: is this required?
         (serial, parallel) = self.circuit
 
-        return self.cell.format.area * serial * parallel
+        return 2 * self.volume / self.cell.cell_format.height  # TODO: check for other formats other than prismatic
