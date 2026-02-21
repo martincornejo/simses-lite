@@ -82,15 +82,19 @@ class Battery:
         elif i < 0:
             i = max(i, i_max_discharge)
 
-        # 4. Calculate current limit based on linear voltage derating
+        # 4. Apply linear voltage derating.
+        # Derating is computed using the actual current i (correct IR drop at the operating point).
+        # i_max_charge / i_max_discharge are only updated when the derating actually reduces i,
+        # so that the reported limits reflect the hard limits during normal operation and only
+        # drop when the battery is genuinely in the derating zone.
         if self.has_linear_derating:
-            i_max_derate = self.linear_voltage_derating(i, ocv, hys, rint)
-            if i > 0:
-                i_max_charge = min(i_max_charge, i_max_derate)
-                i = min(i, i_max_derate)
-            elif i < 0:
-                i_max_discharge = max(i_max_discharge, i_max_derate)
-                i = max(i, i_max_derate)
+            i_derate = self.linear_voltage_derating(i, ocv, hys, rint)
+            if i > 0 and i_derate < i:
+                i = i_derate
+                i_max_charge = min(i_max_charge, i_derate)
+            elif i < 0 and i_derate > i:
+                i = i_derate
+                i_max_discharge = max(i_max_discharge, i_derate)
 
         # update soc
         (soc_min, soc_max) = self.soc_limits
@@ -279,7 +283,7 @@ class Battery:
         """Maximum allowed charge current in A."""
         (serial, parallel) = self.circuit
 
-        return self.cell.electrical.nominal_capacity * self.cell.electrical.max_discharge_rate * parallel
+        return self.cell.electrical.nominal_capacity * self.cell.electrical.max_charge_rate * parallel
 
     @property
     def max_discharge_current(self) -> float:
