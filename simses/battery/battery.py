@@ -2,6 +2,7 @@ import math
 
 from simses.battery.cell import CellType
 from simses.battery.state import BatteryState
+from simses.degradation.degradation import DegradationModel
 
 
 class Battery:
@@ -13,10 +14,12 @@ class Battery:
         circuit: tuple[int, int],  # (s, p)
         initial_states: dict,
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
+        degradation: DegradationModel | None = None,
     ) -> None:
         self.cell = cell
         self.circuit = circuit
         self.soc_limits = soc_limits
+        self.degradation = degradation
         self.has_linear_derating = (
             cell.electrical.charge_derate_voltage_start is not None
             or cell.electrical.discharge_derate_voltage_start is not None
@@ -126,6 +129,9 @@ class Battery:
         self.state.is_charge = is_charge
         self.state.i_max_charge = i_max_charge
         self.state.i_max_discharge = i_max_discharge
+
+        if self.degradation is not None:
+            self.degradation.update(self.state, dt)  # updates state.soh_Q and state.soh_R
 
     def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
         """

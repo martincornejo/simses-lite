@@ -48,4 +48,3 @@ class CellType(ABC):
         """Compute the beginning-of-life internal resistance (in Ohms) for a given battery state."""
         pass
 
-    # TODO: degradation model?
