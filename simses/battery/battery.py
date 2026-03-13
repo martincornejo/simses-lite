@@ -15,15 +15,13 @@ class Battery:
         initial_states: dict,
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
         degradation: DegradationModel | None = None,
+        derating=None,
     ) -> None:
         self.cell = cell
         self.circuit = circuit
         self.soc_limits = soc_limits
         self.degradation = degradation
-        self.has_linear_derating = (
-            cell.electrical.charge_derate_voltage_start is not None
-            or cell.electrical.discharge_derate_voltage_start is not None
-        )
+        self.derating = derating
         self.state = self.initialize_state(**initial_states)
 
     def initialize_state(
@@ -64,13 +62,15 @@ class Battery:
                 Timestep in s
         """
         state: BatteryState = self.state
-        # update state
         state.is_charge = power_setpoint > 0.0
 
-        # update soc, ocv and rint based on previous state
-        ocv = self.open_circuit_voltage(state)
-        hys = self.hystheresis_voltage(state)
-        rint = self.internal_resistance(state)
+        # --- phase 1: refresh derived cell properties from current soc/T ---
+        # ocv, hys, rint are derived from inputs (soc, T, soh_R) that do not
+        # change during this method, so updating them here is safe and ensures
+        # all calculations — including derating — use consistent current values.
+        ocv = state.ocv = self.open_circuit_voltage(state)
+        hys = state.hys = self.hystheresis_voltage(state)
+        rint = state.rint = self.internal_resistance(state)
         Q = self.capacity(state)
 
         # 1. Calculate equilibrium current to meet power setpoint
@@ -85,13 +85,12 @@ class Battery:
         elif i < 0:
             i = max(i, i_max_discharge)
 
-        # 4. Apply linear voltage derating.
-        # Derating is computed using the actual current i (correct IR drop at the operating point).
-        # i_max_charge / i_max_discharge are only updated when the derating actually reduces i,
+        # 4. Apply derating (optional).
+        # i_max_charge / i_max_discharge are only updated when derating actually reduces i,
         # so that the reported limits reflect the hard limits during normal operation and only
         # drop when the battery is genuinely in the derating zone.
-        if self.has_linear_derating:
-            i_derate = self.linear_voltage_derating(i, ocv, hys, rint)
+        if self.derating is not None:
+            i_derate = self.derating.derate(i, state)
             if i > 0 and i_derate < i:
                 i = i_derate
                 i_max_charge = min(i_max_charge, i_derate)
@@ -116,19 +115,16 @@ class Battery:
         # hys_loss = abs(ocv - hys) * i # ?
         # reversible loss ?
 
-        # update state
-        self.state.v = v
-        self.state.i = i
-        self.state.power = power
-        self.state.power_setpoint = power_setpoint
-        self.state.loss = rint_loss
-        self.state.soc = soc
-        self.state.ocv = ocv
-        self.state.hys = hys
-        self.state.rint = rint
-        self.state.is_charge = is_charge
-        self.state.i_max_charge = i_max_charge
-        self.state.i_max_discharge = i_max_discharge
+        # --- phase 2: write output state ---
+        state.v = v
+        state.i = i
+        state.power = power
+        state.power_setpoint = power_setpoint
+        state.loss = rint_loss
+        state.soc = soc
+        state.is_charge = is_charge
+        state.i_max_charge = i_max_charge
+        state.i_max_discharge = i_max_discharge
 
         if self.degradation is not None:
             self.degradation.update(self.state, dt)  # updates state.soh_Q and state.soh_R
@@ -166,43 +162,6 @@ class Battery:
             (soc_min - soc) * Q / (dt / 3600),  # SOC limit
         )
         return i_max_charge, i_max_discharge
-
-    def linear_voltage_derating(self, i: float, ocv: float, hys: float, rint: float) -> float:
-        """Reduce current if the terminal voltage is in the derating zone.
-
-        After all other limits have been applied, the terminal voltage is
-        computed as v_terminal = ocv + hys + rint * i.  If it falls inside
-        the derating region the current is scaled down linearly:
-
-        Charge  (i > 0): between charge_derate_voltage_start and max_voltage
-        Discharge (i < 0): between discharge_derate_voltage_start and min_voltage
-        """
-        if i == 0.0:
-            return i
-
-        v = ocv + hys + rint * i
-
-        if i > 0:  # charge
-            derate_v = self.charge_derate_voltage_start
-            if derate_v is None:
-                return i
-            if v <= derate_v:
-                return i  # below derating zone
-            if v >= self.max_voltage:
-                return 0.0
-            factor = (self.max_voltage - v) / (self.max_voltage - derate_v)
-            return i * factor
-
-        else:  # discharge
-            derate_v = self.discharge_derate_voltage_start
-            if derate_v is None:
-                return i
-            if v >= derate_v:
-                return i  # above derating zone
-            if v <= self.min_voltage:
-                return 0.0
-            factor = (v - self.min_voltage) / (derate_v - self.min_voltage)
-            return i * factor
 
     ## electrical properties
     def open_circuit_voltage(self, state):
@@ -265,24 +224,6 @@ class Battery:
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.max_voltage * serial
-
-    @property
-    def charge_derate_voltage_start(self) -> float | None:
-        """System-level voltage at which charge derating begins, or None if disabled."""
-        v = self.cell.electrical.charge_derate_voltage_start
-        if v is None:
-            return None
-        (serial, parallel) = self.circuit
-        return v * serial
-
-    @property
-    def discharge_derate_voltage_start(self) -> float | None:
-        """System-level voltage at which discharge derating begins, or None if disabled."""
-        v = self.cell.electrical.discharge_derate_voltage_start
-        if v is None:
-            return None
-        (serial, parallel) = self.circuit
-        return v * serial
 
     @property
     def max_charge_current(self) -> float:

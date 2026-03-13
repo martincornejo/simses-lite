@@ -4,6 +4,7 @@ import pytest
 
 from simses.battery.battery import Battery
 from simses.battery.cell import CellType
+from simses.battery.derating import DeratingChain, LinearThermalDerating, LinearVoltageDerating
 from simses.battery.format import PrismaticCell
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.battery.state import BatteryState
@@ -419,18 +420,24 @@ class TestVoltageDerating:
     """Tests for the optional linear voltage derating feature, verified via update()."""
 
     def _make_derate_battery(self, soc=0.5, charge_derate=None, discharge_derate=None):
-        kw = {}
-        if charge_derate is not None:
-            kw["charge_derate_voltage_start"] = charge_derate
-        if discharge_derate is not None:
-            kw["discharge_derate_voltage_start"] = discharge_derate
-        return _make_battery(soc=soc, **kw)
+        cell = SimpleCell()
+        derating = LinearVoltageDerating(
+            max_voltage=cell.electrical.max_voltage,
+            min_voltage=cell.electrical.min_voltage,
+            charge_start_voltage=charge_derate,
+            discharge_start_voltage=discharge_derate,
+        )
+        return Battery(
+            cell=cell,
+            circuit=(1, 1),
+            initial_states={"start_soc": soc, "start_T": 298.15},
+            derating=derating,
+        )
 
     # --- derating disabled by default ---
     def test_no_derating_by_default(self):
         bat = _make_battery(soc=0.5)
-        assert bat.charge_derate_voltage_start is None
-        assert bat.discharge_derate_voltage_start is None
+        assert bat.derating is None
 
     def test_no_derating_same_as_baseline(self):
         """Without derating configured, behaviour is identical to a plain battery."""
@@ -607,6 +614,114 @@ class TestVoltageDerating:
         bat.update(power_setpoint=power_setpoint, dt=60.0)
         assert bat.state.i >= bat.state.i_max_discharge - 1e-9
         assert bat.state.i <= bat.state.i_max_charge + 1e-9
+
+
+# ===================================================================
+# Thermal derating
+# ===================================================================
+class TestThermalDerating:
+    T_START = 318.15  # 45 °C
+    T_MAX = 333.15  # 60 °C
+
+    def _make(self, T, soc=0.5):
+        return Battery(
+            cell=SimpleCell(),
+            circuit=(1, 1),
+            initial_states={"start_soc": soc, "start_T": T},
+            derating=LinearThermalDerating(charge_T_start=self.T_START, charge_T_max=self.T_MAX),
+        )
+
+    def test_no_derating_below_T_start(self):
+        T = 310.0
+        bat_no = _make_battery(soc=0.5, T=T)
+        bat_no.update(power_setpoint=100.0, dt=60.0)
+        bat_dr = self._make(T=T)
+        bat_dr.update(power_setpoint=100.0, dt=60.0)
+        assert bat_dr.state.i == pytest.approx(bat_no.state.i, rel=1e-9)
+
+    def test_derating_reduces_current_in_zone(self):
+        T = 325.0  # between T_START and T_MAX
+        bat_no = _make_battery(soc=0.5, T=T)
+        bat_no.update(power_setpoint=100.0, dt=60.0)
+        bat_dr = self._make(T=T)
+        bat_dr.update(power_setpoint=100.0, dt=60.0)
+        assert bat_dr.state.i < bat_no.state.i
+        assert bat_dr.state.i >= 0
+
+    def test_current_zero_at_T_max(self):
+        bat = self._make(T=self.T_MAX)
+        bat.update(power_setpoint=100.0, dt=60.0)
+        assert bat.state.i == pytest.approx(0.0, abs=1e-9)
+
+    def test_zero_power_unaffected(self):
+        bat = self._make(T=325.0)
+        bat.update(power_setpoint=0.0, dt=60.0)
+        assert bat.state.i == 0.0
+
+    def test_discharge_uses_same_thresholds_by_default(self):
+        """Discharge derating mirrors charge derating when not configured separately."""
+        T = 325.0
+        bat_no = _make_battery(soc=0.5, T=T)
+        bat_no.update(power_setpoint=-100.0, dt=60.0)
+        bat_dr = self._make(T=T)
+        bat_dr.update(power_setpoint=-100.0, dt=60.0)
+        # derated discharge current is less negative (closer to 0)
+        assert bat_dr.state.i > bat_no.state.i
+        assert bat_dr.state.i <= 0
+
+
+# ===================================================================
+# DeratingChain
+# ===================================================================
+class TestDeratingChain:
+    def test_empty_chain_no_effect(self):
+        bat_chain = Battery(
+            cell=SimpleCell(),
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            derating=DeratingChain([]),
+        )
+        bat_none = _make_battery(soc=0.5)
+        bat_chain.update(power_setpoint=100.0, dt=60.0)
+        bat_none.update(power_setpoint=100.0, dt=60.0)
+        assert bat_chain.state.i == pytest.approx(bat_none.state.i, rel=1e-9)
+
+    def test_chain_thermal_reduces_current(self):
+        """Chain with active thermal derating reduces current vs. no derating."""
+        T = 325.0
+        cell = SimpleCell()
+        derating = DeratingChain([
+            LinearVoltageDerating(
+                max_voltage=cell.electrical.max_voltage,
+                min_voltage=cell.electrical.min_voltage,
+                charge_start_voltage=4.0,
+            ),
+            LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15),
+        ])
+        bat_chain = Battery(
+            cell=cell,
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": T},
+            derating=derating,
+        )
+        bat_none = _make_battery(soc=0.5, T=T)
+        bat_chain.update(power_setpoint=100.0, dt=60.0)
+        bat_none.update(power_setpoint=100.0, dt=60.0)
+        assert bat_chain.state.i <= bat_none.state.i + 1e-9
+
+    def test_chain_is_itself_a_valid_derating(self):
+        """A DeratingChain can be nested inside another DeratingChain."""
+        cell = SimpleCell()
+        inner = DeratingChain([LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15)])
+        outer = DeratingChain([inner])
+        bat = Battery(
+            cell=cell,
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 325.0},
+            derating=outer,
+        )
+        bat.update(power_setpoint=100.0, dt=60.0)
+        assert bat.state.i >= 0
 
 
 # ===================================================================
