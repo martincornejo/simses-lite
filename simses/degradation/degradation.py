@@ -4,12 +4,12 @@ from simses.degradation.cycle_detector import HalfCycle, HalfCycleDetector
 from simses.degradation.cyclic import CyclicDegradation
 
 
-class _NoOpCalendar(CalendarDegradation):
+class _NoOpCalendar:
     def update(self, state: BatteryState, dt: float) -> tuple[float, float]:
         return 0.0, 0.0
 
 
-class _NoOpCyclic(CyclicDegradation):
+class _NoOpCyclic:
     def update(self, state: BatteryState, half_cycle: HalfCycle) -> tuple[float, float]:
         return 0.0, 0.0
 

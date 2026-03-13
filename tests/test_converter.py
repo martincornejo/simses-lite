@@ -13,7 +13,7 @@ def _make_converter(max_power, effc=0.95, effd=None, circuit=(10, 1), soc=0.5, *
     """Helper to create a Converter with FixedEfficiency and SimpleCell battery."""
     battery = _make_battery(circuit=circuit, soc=soc, **battery_kw)
     model = FixedEfficiency(effc=effc, effd=effd)
-    return Converter(loss_model=model, max_power=max_power, storage=battery)
+    return Converter(loss_model=model, max_power=max_power, component=battery)
 
 
 # ===================================================================
@@ -78,19 +78,19 @@ class TestConverterStorageInteraction:
         """Charging through converter should increase battery SOC."""
         conv = _make_converter(max_power=1000.0)
 
-        soc_before = conv.storage.state.soc
+        soc_before = conv.component.state.soc
         conv.update(power_setpoint=1000.0, dt=60.0)
 
-        assert conv.storage.state.soc > soc_before
+        assert conv.component.state.soc > soc_before
 
     def test_battery_soc_decreases_on_discharge(self):
         """Discharging through converter should decrease battery SOC."""
         conv = _make_converter(max_power=1000.0)
 
-        soc_before = conv.storage.state.soc
+        soc_before = conv.component.state.soc
         conv.update(power_setpoint=-1000.0, dt=60.0)
 
-        assert conv.storage.state.soc < soc_before
+        assert conv.component.state.soc < soc_before
 
     def test_battery_fulfills_power_request(self):
         """When battery can fulfill power, no re-calculation needed."""
@@ -125,11 +125,11 @@ class TestConverterStorageInteraction:
         """Zero power request should not change battery SOC."""
         conv = _make_converter(max_power=1000.0)
 
-        soc_before = conv.storage.state.soc
+        soc_before = conv.component.state.soc
         conv.update(power_setpoint=0.0, dt=60.0)
 
-        assert conv.storage.state.soc == soc_before
-        assert conv.storage.state.power == 0.0
+        assert conv.component.state.soc == soc_before
+        assert conv.component.state.power == 0.0
         assert conv.state.power == 0.0
         assert conv.state.loss == 0.0
 
@@ -161,7 +161,7 @@ class TestConverterLoss:
 
         # Loss = AC - DC, should be positive for charging
         loss = conv.state.loss
-        power_dc = conv.storage.state.power
+        power_dc = conv.component.state.power
         assert power_dc == pytest.approx(power_ac * 0.95, abs=1e-6)
         assert loss == pytest.approx(power_ac * (1 - 0.95), abs=1e-6)
         assert loss == pytest.approx(power_ac - power_dc, abs=1e-6)
@@ -176,7 +176,7 @@ class TestConverterLoss:
         # Loss = AC - DC = (-1000) - (-1053) = +53 W (heat dissipated)
         # Loss is always positive, representing energy lost as heat
         loss = conv.state.loss
-        power_dc = conv.storage.state.power
+        power_dc = conv.component.state.power
         assert power_dc == pytest.approx(power_ac / 0.95, abs=1e-6)
         assert loss == pytest.approx(1000.0 * ((1 / 0.95) - 1), abs=1e-6)
         assert loss == pytest.approx(power_ac - power_dc, abs=1e-6)

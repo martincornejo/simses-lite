@@ -6,7 +6,6 @@ import pandas as pd
 
 class SinamicsS120:
     def __init__(self) -> None:
-        super().__init__()
         path = os.path.dirname(os.path.abspath(__file__))
         file = os.path.join(path, "data", "sinamics_S120_efficiency.csv")
         df_eff = pd.read_csv(file)  # efficiency curves
@@ -32,7 +31,6 @@ class SinamicsS120:
 
 class SinamicsS120Fit:
     def __init__(self) -> None:
-        super().__init__()
         # self.params = {"k0": 0.00601144, "k1": 0.00863612, "k2": 0.01195589, "m0": 97}
         params = (0.00601144, 0.00863612, 0.01195589, 97)
         k0, k1, k2, m0 = params

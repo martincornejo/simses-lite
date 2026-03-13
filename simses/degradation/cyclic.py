@@ -1,17 +1,16 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 from simses.battery.state import BatteryState
 from simses.degradation.cycle_detector import HalfCycle
 
 
-class CyclicDegradation(ABC):
-    """Abstract base class for cyclic aging models.
+class CyclicDegradation(Protocol):
+    """Protocol for cyclic aging models.
 
     Implementations compute incremental capacity fade and resistance increase
     based on half-cycle stress factors (DOD, mean SOC, C-rate).
     """
 
-    @abstractmethod
     def update(self, state: BatteryState, half_cycle: HalfCycle) -> tuple[float, float]:
         """Compute incremental cyclic degradation for a completed half-cycle.
 
@@ -24,3 +23,4 @@ class CyclicDegradation(ABC):
             delta_soh_Q is negative (capacity loss), delta_soh_R is positive
             (resistance increase).
         """
+        ...

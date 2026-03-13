@@ -1,6 +1,7 @@
 import math
 
 from simses.battery.cell import CellType
+from simses.battery.derating import CurrentDerating
 from simses.battery.state import BatteryState
 from simses.degradation.degradation import DegradationModel
 
@@ -15,7 +16,7 @@ class Battery:
         initial_states: dict,
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
         degradation: DegradationModel | None = None,
-        derating=None,
+        derating: CurrentDerating | None = None,
     ) -> None:
         self.cell = cell
         self.circuit = circuit

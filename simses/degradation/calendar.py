@@ -1,16 +1,15 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 from simses.battery.state import BatteryState
 
 
-class CalendarDegradation(ABC):
-    """Abstract base class for calendar aging models.
+class CalendarDegradation(Protocol):
+    """Protocol for calendar aging models.
 
     Implementations compute incremental capacity fade and resistance increase
     based on time, temperature, and SOC.
     """
 
-    @abstractmethod
     def update(self, state: BatteryState, dt: float) -> tuple[float, float]:
         """Compute incremental calendar degradation.
 
@@ -23,3 +22,4 @@ class CalendarDegradation(ABC):
             delta_soh_Q is negative (capacity loss), delta_soh_R is positive
             (resistance increase).
         """
+        ...
