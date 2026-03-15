@@ -259,7 +259,7 @@ class ContainerThermalModel:
     Components are registered via :meth:`add_component` and must provide:
 
     * ``state.T``            -- current temperature in K (read/written)
-    * ``state.loss``         -- heat generation in W (read)
+    * ``state.heat``         -- total heat generation in W (read)
     * ``thermal_capacity``   -- thermal capacity in J/K (read)
     * ``thermal_resistance`` -- thermal resistance to internal air in K/W (read)
 
@@ -364,7 +364,7 @@ class ContainerThermalModel:
             T_bat = comp.state.T
             C_bat = comp.thermal_capacity
             R_bat = comp.thermal_resistance
-            dT = (comp.state.loss / C_bat) - (T_bat - T_air) / (R_bat * C_bat)
+            dT = (comp.state.heat / C_bat) - (T_bat - T_air) / (R_bat * C_bat)
             bat_dTs.append(dT)
             Q_bats_to_air += (T_bat - T_air) / R_bat
 

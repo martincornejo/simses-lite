@@ -12,18 +12,18 @@ from tests.test_battery import _make_battery
 # Lightweight mock component (duck-typed to match the thermal model interface)
 # ---------------------------------------------------------------------------
 class _MockState:
-    __slots__ = ("T", "loss")
+    __slots__ = ("T", "heat")
 
-    def __init__(self, T: float, loss: float = 0.0):
+    def __init__(self, T: float, heat: float = 0.0):
         self.T = T
-        self.loss = loss
+        self.heat = heat
 
 
 class _MockComponent:
     """Minimal component satisfying the AmbientThermalModel duck-typed interface."""
 
     def __init__(self, T: float, loss: float, thermal_capacity: float, thermal_resistance: float):
-        self.state = _MockState(T=T, loss=loss)
+        self.state = _MockState(T=T, heat=loss)
         self.thermal_capacity = thermal_capacity
         self.thermal_resistance = thermal_resistance
 
