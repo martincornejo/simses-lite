@@ -36,9 +36,11 @@ class Battery:
             power=0,
             power_setpoint=0,
             loss=0,
+            heat=0,
             soc=start_soc,
             ocv=0,  # uninitialized
             hys=0,  # uninitialized
+            entropy=0,  # uninitialized
             is_charge=True,
             rint=0,  # uninitialized
             soh_Q=start_soh_Q,
@@ -49,6 +51,7 @@ class Battery:
         state.ocv = state.v = self.open_circuit_voltage(state)
         state.hys = self.hystheresis_voltage(state)
         state.rint = self.internal_resistance(state)
+        state.entropy = self.entropic_coefficient(state)
         return state
 
     def update(self, power_setpoint, dt) -> None:
@@ -72,6 +75,7 @@ class Battery:
         ocv = state.ocv = self.open_circuit_voltage(state)
         hys = state.hys = self.hystheresis_voltage(state)
         rint = state.rint = self.internal_resistance(state)
+        entropy = state.entropy = self.entropic_coefficient(state)
         Q = self.capacity(state)
 
         # 1. Calculate equilibrium current to meet power setpoint
@@ -112,16 +116,17 @@ class Battery:
         power = v * i
 
         # update losses
-        rint_loss = rint * i**2
-        # hys_loss = abs(ocv - hys) * i # ?
-        # reversible loss ?
+        loss_irr = (v - ocv) * i  # irreversible losses
+        loss_rev = entropy * state.T * i  # reversible losses
+        heat = loss_irr + loss_rev  # internal heat generation
 
         # --- phase 2: write output state ---
         state.v = v
         state.i = i
         state.power = power
         state.power_setpoint = power_setpoint
-        state.loss = rint_loss
+        state.loss = loss_irr
+        state.heat = heat
         state.soc = soc
         state.is_charge = is_charge
         state.i_max_charge = i_max_charge
@@ -183,6 +188,11 @@ class Battery:
 
         # state.i = state.i / parallel # <- should be scaled to the cell
         return self.cell.internal_resistance(state) / parallel * serial * state.soh_R
+
+    def entropic_coefficient(self, state):
+        """Return the system-level entropic coefficient in V/K."""
+        (serial, parallel) = self.circuit
+        return self.cell.entropic_coefficient(state) * serial
 
     def capacity(self, state):
         """Return the current capacity in Ah, scaled by SoH."""

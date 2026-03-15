@@ -1,13 +1,11 @@
 import math
 import os
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy.interpolate import RegularGridInterpolator
 
-from simses.battery.battery import BatteryState
-from simses.battery.battery import CellType
+from simses.battery.battery import BatteryState, CellType
 from simses.battery.format import RoundCell26650
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 
@@ -40,13 +38,29 @@ class SonyLFP(CellType):
             ),
             cell_format=RoundCell26650(),
         )
-        # path, _ = os.path.split(os.path.abspath(__file__))
-        # path = Path(path)
         path = os.path.dirname(os.path.abspath(__file__))
 
+        ## OCV look-up table
+        file_ocv = os.path.join(path, "data", "CLFP_Sony_US26650_OCV.csv")
+        df_ocv = pd.read_csv(file_ocv)
+        self._ocv_lut_soc = df_ocv["SOC"].to_numpy()
+        self._ocv_lut_ocv = df_ocv["OCV"].to_numpy()
+
+        ## Hystheresis look-up table
+        file_hyst = os.path.join(path, "data", "CLFP_Sony_US26650_HystV.csv")
+        df_hyst = pd.read_csv(file_hyst)
+        self._hyst_lut_soc = df_hyst["SOC"].to_numpy()
+        self._hyst_lut_hyst = df_hyst["HystV"].to_numpy()
+
+        # entropic coefficient look-up table
+        file_entropy = os.path.join(path, "data", "CLFP_Sony_US26650_entropy.csv")
+        df_entropy = pd.read_csv(file_entropy)
+        self._entropy_lut_soc = df_entropy["SOC"].to_numpy()
+        self._entropy_lut_entropy = df_entropy["S"].to_numpy()
+
         ## internal resistance 2D look-up table
-        file = os.path.join(path, "data", "CLFP_Sony_US26650_Rint.csv")
-        df_rint = pd.read_csv(file)
+        file_rint = os.path.join(path, "data", "CLFP_Sony_US26650_Rint.csv")
+        df_rint = pd.read_csv(file_rint)
 
         soc_rint = df_rint["SOC"]
         T_rint = df_rint["Temp"].dropna()
@@ -58,32 +72,16 @@ class SonyLFP(CellType):
         self._rint_dch_interp2d = RegularGridInterpolator((soc_rint, T_rint), np.array(rint_mat_dch))
 
     def open_circuit_voltage(self, state: BatteryState) -> float:
-        """Parameters build with ocv fitting"""
-        a1 = -116.2064
-        a2 = -22.4512
-        a3 = 358.9072
-        a4 = 499.9994
-        b1 = -0.1572
-        b2 = -0.0944
-        k0 = 2.0020
-        k1 = -3.3160
-        k2 = 4.9996
-        k3 = -0.4574
-        k4 = -1.3646
-        k5 = 0.1251
-
         soc = state.soc
+        return float(np.interp(soc, self._ocv_lut_soc, self._ocv_lut_ocv))
 
-        ocv = (
-            k0
-            + k1 / (1 + math.exp(a1 * (soc - b1)))
-            + k2 / (1 + math.exp(a2 * (soc - b2)))
-            + k3 / (1 + math.exp(a3 * (soc - 1)))
-            + k4 / (1 + math.exp(a4 * soc))
-            + k5 * soc
-        )
+    def hystheresis_voltage(self, state):
+        soc = state.soc
+        return float(np.interp(soc, self._hyst_lut_soc, self._hyst_lut_hyst))
 
-        return ocv
+    def entropic_coefficient(self, state: BatteryState) -> float:
+        soc = state.soc
+        return float(np.interp(soc, self._entropy_lut_soc, self._entropy_lut_entropy))
 
     def internal_resistance(self, state: BatteryState) -> float:
         if state.is_charge:

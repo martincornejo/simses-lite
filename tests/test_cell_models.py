@@ -74,9 +74,11 @@ def _state(soc: float = 0.5, T: float = 298.15, is_charge: bool = True) -> Batte
         power=0,
         power_setpoint=0,
         loss=0,
+        heat=0,
         soc=soc,
         ocv=0,
         hys=0,
+        entropy=0,
         rint=0,
         soh_Q=1.0,
         soh_R=1.0,
@@ -141,6 +143,35 @@ class TestInternalResistance:
                     state = _state(soc=soc, T=T, is_charge=is_charge)
                     rint = cell.internal_resistance(state)
                     assert rint > 0, f"Rint={rint} at SOC={soc}, T={T}, is_charge={is_charge}"
+
+
+# ===================================================================
+# Hysteresis voltage
+# ===================================================================
+class TestHysteresisVoltage:
+    def test_returns_float(self, cell):
+        assert isinstance(cell.hystheresis_voltage(_state()), float)
+
+    def test_within_reasonable_range(self, cell):
+        """Hysteresis voltage magnitude should be smaller than the full voltage window."""
+        v_range = cell.electrical.max_voltage - cell.electrical.min_voltage
+        for soc in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            hys = cell.hystheresis_voltage(_state(soc=soc))
+            assert abs(hys) < v_range, f"Hysteresis={hys:.4f} exceeds voltage window at SOC={soc}"
+
+
+# ===================================================================
+# Entropic coefficient
+# ===================================================================
+class TestEntropicCoefficient:
+    def test_returns_float(self, cell):
+        assert isinstance(cell.entropic_coefficient(_state()), float)
+
+    def test_reasonable_magnitude(self, cell):
+        """Entropic coefficient for Li-ion cells is typically between -1 and +1 mV/K."""
+        for soc in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            ec = cell.entropic_coefficient(_state(soc=soc))
+            assert abs(ec) < 1e-2, f"Entropic coefficient={ec:.6f} V/K seems unreasonably large at SOC={soc}"
 
 
 # ===================================================================

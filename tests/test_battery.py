@@ -83,6 +83,15 @@ class TestBatteryInitialization:
         bat = _make_battery(soc=0.5)
         assert bat.state.rint == pytest.approx(SimpleCell.RINT)
 
+    def test_initial_entropy_is_float(self):
+        bat = _make_battery(soc=0.5)
+        assert isinstance(bat.state.entropy, float)
+
+    def test_initial_heat_is_zero(self):
+        """Heat is zero at rest (no current flows during initialization)."""
+        bat = _make_battery(soc=0.5)
+        assert bat.state.heat == 0.0
+
 
 # ===================================================================
 # Nominal / system-level properties (scaling with circuit)
@@ -320,6 +329,17 @@ class TestBatteryUpdate:
         bat = _make_battery(soc=0.5)
         bat.update(power_setpoint=200.0, dt=60.0)
         assert bat.state.loss >= 0.0
+
+    def test_loss_is_positive_on_discharge(self):
+        bat = _make_battery(soc=0.5)
+        bat.update(power_setpoint=-200.0, dt=60.0)
+        assert bat.state.loss >= 0.0
+
+    def test_heat_set_after_update(self):
+        """heat field is populated (non-zero when current flows)."""
+        bat = _make_battery(soc=0.5)
+        bat.update(power_setpoint=200.0, dt=60.0)
+        assert bat.state.heat != 0.0
 
     def test_power_setpoint_stored(self):
         bat = _make_battery(soc=0.5)

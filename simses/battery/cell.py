@@ -41,10 +41,13 @@ class CellType(ABC):
 
     def hystheresis_voltage(self, state: BatteryState) -> float:
         """Compute the hysteresis voltage (in V) for a given battery state. Default is 0."""
-        return 0
+        return 0.0
 
     @abstractmethod
     def internal_resistance(self, state: BatteryState) -> float:
         """Compute the beginning-of-life internal resistance (in Ohms) for a given battery state."""
         pass
 
+    def entropic_coefficient(self, state: BatteryState) -> float:
+        """Compute entropic coefficient (in V/K) for a given battery state. Default is 0."""
+        return 0.0

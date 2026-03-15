@@ -24,6 +24,8 @@ class BatteryState:
         Hysteresis voltage of the battery in volts (V).
     rint: float
         Internal resistance of the battery in ohms (Ω).
+    entropy: float
+        Entropic coefficient of the battery in volts per Kelvin (V/K).
     soh_Q: float
         State of health of the battery in terms of capacity in per unit (p.u.).
     soh_R: float
@@ -32,6 +34,8 @@ class BatteryState:
         True if the battery is charging, False if discharging.
     loss: float
         Power loss of the battery in watts (W).
+    heat: float
+        Internal heat generation of the battery in watts (W).
     i_max_charge: float
         Theoretical maximum charge current this timestep in amperes (A).
     i_max_discharge: float
@@ -47,10 +51,11 @@ class BatteryState:
     ocv: float  # V
     hys: float  # V
     rint: float  # ohm
+    entropy: float  # V/K
     soh_Q: float  # p.u.
     soh_R: float  # p.u.
     is_charge: bool
     loss: float  # W
+    heat: float  # W
     i_max_charge: float  # A
     i_max_discharge: float  # A
-    # reversible heat
