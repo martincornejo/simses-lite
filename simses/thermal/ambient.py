@@ -1,4 +1,18 @@
-class RoomThermalModel:
+from dataclasses import dataclass
+
+
+@dataclass
+class AmbientThermalState:
+    """Mutable state of a :class:`AmbientThermalModel`.
+
+    Attributes:
+        T_ambient:     External ambient temperature in K.
+    """
+
+    T_ambient: float
+
+
+class AmbientThermalModel:
     """Zero-dimensional room thermal model with constant ambient temperature.
 
     Models heat exchange between registered components and a constant-temperature
@@ -18,7 +32,7 @@ class RoomThermalModel:
     """
 
     def __init__(self, T_ambient: float, components: list | None = None) -> None:
-        self.T_ambient = T_ambient
+        self.state = AmbientThermalState(T_ambient=T_ambient)
         self._components: list = list(components) if components else []
 
     def add_component(self, component) -> None:
@@ -45,3 +59,12 @@ class RoomThermalModel:
 
             dT_dt = Q_loss / C_th + (T_amb - T) / (R_th * C_th)
             comp.state.T = T + dT_dt * dt
+
+    @property
+    def T_ambient(self) -> float:
+        """External ambient temperature in K (convenience accessor for ``state.T_ambient``)."""
+        return self.state.T_ambient
+
+    @T_ambient.setter
+    def T_ambient(self, value: float) -> None:
+        self.state.T_ambient = value

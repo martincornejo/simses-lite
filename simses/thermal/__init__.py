@@ -9,10 +9,10 @@ from simses.thermal.container import (
     ThermostatMode,
     ThermostatStrategy,
 )
-from simses.thermal.thermal import RoomThermalModel
+from simses.thermal.ambient import AmbientThermalModel
 
 __all__ = [
-    "RoomThermalModel",
+    "AmbientThermalModel",
     "ConstantCopHvac",
     "ContainerLayer",
     "ContainerProperties",
