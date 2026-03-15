@@ -8,6 +8,7 @@ from simses.battery.derating import DeratingChain, LinearThermalDerating, Linear
 from simses.battery.format import PrismaticCell
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.battery.state import BatteryState
+from simses.model.cell.sony_lfp import SonyLFP
 
 
 # ---------------------------------------------------------------------------
@@ -776,3 +777,62 @@ class TestEdgeCases:
         bat.state.soh_R = 1.2
         assert bat.capacity(bat.state) == pytest.approx(100.0 * 0.8)
         assert bat.internal_resistance(bat.state) == pytest.approx(SimpleCell.RINT * 1.2)
+
+
+# ===================================================================
+# Default degradation model (degradation=True)
+# ===================================================================
+class TestDefaultDegradationModel:
+    def test_sony_lfp_degradation_true_creates_model(self):
+        """degradation=True with SonyLFP should attach a degradation model."""
+        bat = Battery(
+            cell=SonyLFP(),
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            degradation=True,
+        )
+        assert bat.degradation is not None
+
+    def test_sony_lfp_degradation_true_soh_decreases(self):
+        """After many cycles, soh_Q should drop below 1.0 when degradation=True."""
+        bat = Battery(
+            cell=SonyLFP(),
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            degradation=True,
+        )
+        dt = 3600.0  # 1 hour steps
+        for _ in range(500):
+            bat.update(power_setpoint=5.0, dt=dt)
+            bat.update(power_setpoint=-5.0, dt=dt)
+        assert bat.state.soh_Q < 1.0
+
+    def test_simple_cell_degradation_true_raises(self):
+        """degradation=True with a cell that has no default model raises ValueError."""
+        with pytest.raises(ValueError, match="SimpleCell has no default degradation model"):
+            Battery(
+                cell=SimpleCell(),
+                circuit=(1, 1),
+                initial_states={"start_soc": 0.5, "start_T": 298.15},
+                degradation=True,
+            )
+
+    def test_degradation_none_unchanged(self):
+        """degradation=None (default) still means no degradation model."""
+        bat = Battery(
+            cell=SonyLFP(),
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            degradation=None,
+        )
+        assert bat.degradation is None
+
+    def test_degradation_false_treated_as_none(self):
+        """degradation=False is equivalent to degradation=None — no model is attached."""
+        bat = Battery(
+            cell=SonyLFP(),
+            circuit=(1, 1),
+            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            degradation=False,
+        )
+        assert bat.degradation is None

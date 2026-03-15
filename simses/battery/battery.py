@@ -15,9 +15,19 @@ class Battery:
         circuit: tuple[int, int],  # (s, p)
         initial_states: dict,
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
-        degradation: DegradationModel | None = None,
+        degradation: DegradationModel | bool | None = None,
         derating: CurrentDerating | None = None,
     ) -> None:
+        if degradation is False:
+            degradation = None
+        if degradation is True:
+            initial_soc = initial_states["start_soc"]
+            degradation = cell.default_degradation_model(initial_soc)
+            if degradation is None:
+                raise ValueError(
+                    f"{type(cell).__name__} has no default degradation model. "
+                    "Pass an explicit DegradationModel or use degradation=None."
+                )
         self.cell = cell
         self.circuit = circuit
         self.soc_limits = soc_limits

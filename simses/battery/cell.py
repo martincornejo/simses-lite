@@ -3,12 +3,14 @@ from abc import ABC, abstractmethod
 from simses.battery.format import CellFormat
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.battery.state import BatteryState
+from simses.degradation.degradation import DegradationModel
 
 
 class CellType(ABC):
     """
     Abstract base class defining the interface and common properties for different types of battery cells.
     Subclasses must implement methods for calculating open-circuit voltage and internal resistance.
+    Optionally, subclasses can override default_degradation_model() to ship a built-in degradation model.
 
     Attributes:
         electrical (ElectricalCellProperties): Electrical properties of the cell.
@@ -21,6 +23,8 @@ class CellType(ABC):
             Returns the hysteresis voltage for a given battery state. Default is 0.
         internal_resistance(state: BatteryState) -> float:
             Abstract method to compute the internal resistance (beginning of life) for a given battery state.
+        default_degradation_model(initial_soc: float) -> DegradationModel | None:
+            Returns the cell's built-in default degradation model, or None if not defined.
     """
 
     def __init__(
@@ -51,3 +55,7 @@ class CellType(ABC):
     def entropic_coefficient(self, state: BatteryState) -> float:
         """Compute entropic coefficient (in V/K) for a given battery state. Default is 0."""
         return 0.0
+
+    def default_degradation_model(self, initial_soc: float) -> DegradationModel | None:
+        """Return the cell's built-in default degradation model, or None if not defined."""
+        return None
