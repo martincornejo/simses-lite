@@ -54,7 +54,7 @@ class Battery:
         state.entropy = self.entropic_coefficient(state)
         return state
 
-    def update(self, power_setpoint, dt) -> None:
+    def update(self, power_setpoint: float, dt: float) -> None:
         """
         Update the battery state based on a power setpoint and timestep.
         If the battery cannot fulfill the power setpoint due to technical limits, it will curtail the current and update the state accordingly.
@@ -170,35 +170,35 @@ class Battery:
         return i_max_charge, i_max_discharge
 
     ## electrical properties
-    def open_circuit_voltage(self, state):
+    def open_circuit_voltage(self, state: BatteryState) -> float:
         """Return the system-level open-circuit voltage in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.open_circuit_voltage(state) * serial
 
-    def hystheresis_voltage(self, state):
+    def hystheresis_voltage(self, state: BatteryState) -> float:
         """Return the system-level hysteresis voltage in V."""
         (serial, parallel) = self.circuit
 
         return self.cell.hystheresis_voltage(state) * serial
 
-    def internal_resistance(self, state):
+    def internal_resistance(self, state: BatteryState) -> float:
         """Return the system-level internal resistance in Ohms, scaled by SoH."""
         (serial, parallel) = self.circuit
 
         # state.i = state.i / parallel # <- should be scaled to the cell
         return self.cell.internal_resistance(state) / parallel * serial * state.soh_R
 
-    def entropic_coefficient(self, state):
+    def entropic_coefficient(self, state: BatteryState) -> float:
         """Return the system-level entropic coefficient in V/K."""
         (serial, parallel) = self.circuit
         return self.cell.entropic_coefficient(state) * serial
 
-    def capacity(self, state):
+    def capacity(self, state: BatteryState) -> float:
         """Return the current capacity in Ah, scaled by SoH."""
         return self.nominal_capacity * state.soh_Q
 
-    def energy_capacity(self, state):
+    def energy_capacity(self, state: BatteryState) -> float:
         """Return the current energy capacity in Wh, scaled by SoH."""
         return self.nominal_energy_capacity * state.soh_Q
 
