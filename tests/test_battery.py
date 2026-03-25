@@ -48,13 +48,16 @@ class SimpleCell(CellType):
         return self.RINT
 
 
-def _make_battery(circuit=(1, 1), soc=0.5, T=298.15, soc_limits=(0.0, 1.0), **cell_kw) -> Battery:
+def _make_battery(
+    circuit=(1, 1), soc=0.5, T=298.15, soc_limits=(0.0, 1.0), effective_cooling_area=1.0, **cell_kw
+) -> Battery:
     """Helper to create a Battery with the SimpleCell."""
     return Battery(
         cell=SimpleCell(**cell_kw),
         circuit=circuit,
         initial_states={"start_soc": soc, "start_T": T},
         soc_limits=soc_limits,
+        effective_cooling_area=effective_cooling_area,
     )
 
 
@@ -158,6 +161,24 @@ class TestBatteryProperties:
         bat = _make_battery(circuit=(3, 1), soc=0.5)
         cell_ocv = 3.0 + 0.5 * 1.2  # 3.6
         assert bat.open_circuit_voltage(bat.state) == pytest.approx(3 * cell_ocv)
+
+    def test_area_default_equals_full_cell_area(self):
+        """Default effective_cooling_area=1.0 → area == cell.format.area * s * p."""
+        bat = _make_battery(circuit=(2, 3))
+        expected = bat.cell.format.area * 2 * 3
+        assert bat.area == pytest.approx(expected)
+
+    def test_area_scales_with_effective_cooling_area(self):
+        """area is proportional to effective_cooling_area."""
+        bat_full = _make_battery(circuit=(1, 1), effective_cooling_area=1.0)
+        bat_half = _make_battery(circuit=(1, 1), effective_cooling_area=0.5)
+        assert bat_half.area == pytest.approx(bat_full.area * 0.5)
+
+    def test_thermal_resistance_uses_effective_cooling_area(self):
+        """thermal_resistance == 1 / (h * area), so halving area doubles resistance."""
+        bat_full = _make_battery(circuit=(1, 1), effective_cooling_area=1.0)
+        bat_half = _make_battery(circuit=(1, 1), effective_cooling_area=0.5)
+        assert bat_half.thermal_resistance == pytest.approx(bat_full.thermal_resistance * 2)
 
 
 # ===================================================================

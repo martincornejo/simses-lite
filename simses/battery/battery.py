@@ -17,7 +17,26 @@ class Battery:
         soc_limits: tuple[float, float] = (0.0, 1.0),  # in p.u.
         degradation: DegradationModel | bool | None = None,
         derating: CurrentDerating | None = None,
+        effective_cooling_area: float = 1.0,
     ) -> None:
+        """
+        Args:
+            cell: Cell model defining OCV, Rint, and physical parameters.
+            circuit: Series-parallel configuration as ``(s, p)``.
+            initial_states: Dict with keys ``start_soc``, ``start_T``, and
+                optionally ``start_soh_Q`` / ``start_soh_R``.
+            soc_limits: ``(soc_min, soc_max)`` operating window in p.u.
+            degradation: Degradation model, or ``True`` to use the cell's
+                default, or ``None`` / ``False`` to disable.
+            derating: Optional current-derating strategy applied after hard
+                limits.
+            effective_cooling_area: Fraction of the total cell surface area
+                that participates in heat exchange with the environment, in
+                p.u. (default 1.0 = full surface area).  Use values below 1
+                to model packs where only a portion of each cell face is
+                exposed to coolant, e.g. 0.5 for a two-sided cooling plate
+                that covers half the cell surface.
+        """
         if degradation is False:
             degradation = None
         if degradation is True:
@@ -33,6 +52,7 @@ class Battery:
         self.soc_limits = soc_limits
         self.degradation = degradation
         self.derating = derating
+        self.effective_cooling_area = effective_cooling_area
         self.state = self.initialize_state(**initial_states)
 
     def initialize_state(
@@ -311,4 +331,5 @@ class Battery:
         """
         (serial, parallel) = self.circuit
 
-        return 2 * self.volume / (self.cell.format.height * 1e-3)  # height mm -> m
+        # return 2 * self.volume / (self.cell.format.height * 1e-3)  # height mm -> m
+        return self.cell.format.area * self.effective_cooling_area * serial * parallel
