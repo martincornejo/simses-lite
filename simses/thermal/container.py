@@ -121,24 +121,24 @@ class HvacModel(Protocol):
 
 
 class ThermalManagementStrategy(Protocol):
-    """Protocol for combined thermostat + HVAC strategies.
+    """Protocol for thermostat control strategies.
 
-    Used by :class:`ContainerThermalModel`.  ``control()`` returns both the
-    thermal power to inject into the air and the electrical consumption so the
-    model can record them in its state.
+    Used by :class:`ContainerThermalModel`.  ``control()`` returns the
+    requested thermal power based on a reference temperature derived from
+    the registered storage components.
     """
 
-    def control(self, T_air: float, dt: float) -> tuple[float, float]:
-        """Advance the strategy and return ``(Q_thermal, P_el)``.
+    def control(self, T_ref: float, dt: float) -> float:
+        """Advance the strategy and return the requested thermal power.
 
         Args:
-            T_air: Current internal air temperature in K.
+            T_ref: Reference temperature in K — the maximum temperature
+                   across all registered storage components.
             dt:    Timestep in seconds.
 
         Returns:
             ``Q_thermal``: thermal power in W
-              (positive = adds heat, negative = removes heat).
-            ``P_el``: electrical power draw in W (always ≥ 0).
+              (positive = adds heat, negative = removes heat, 0 = idle).
         """
         ...
 
@@ -206,30 +206,29 @@ class ThermostatStrategy:
         """Current thermostat operating mode."""
         return self._mode
 
-    def control(self, T_air: float, dt: float) -> tuple[float, float]:
-        """Advance the state machine and return ``(Q_thermal, P_el)``.
+    def control(self, T_ref: float, dt: float) -> float:
+        """Advance the state machine and return the requested thermal power.
 
         Args:
-            T_air: Current internal air temperature in K.
+            T_ref: Reference temperature in K (max battery temperature).
             dt:    Timestep in seconds (unused but required by protocol).
 
         Returns:
             ``Q_thermal``: thermal power in W (±max_power or 0.0).
-            ``P_el``: electrical consumption from the HVAC model in W.
         """
         T_sp = self.T_setpoint
         thresh = self.threshold
 
         if self._mode is ThermostatMode.IDLE:
-            if T_air < T_sp - thresh:
+            if T_ref < T_sp - thresh:
                 self._mode = ThermostatMode.HEATING
-            elif T_air > T_sp + thresh:
+            elif T_ref > T_sp + thresh:
                 self._mode = ThermostatMode.COOLING
         elif self._mode is ThermostatMode.HEATING:
-            if T_air >= T_sp:
+            if T_ref >= T_sp:
                 self._mode = ThermostatMode.IDLE
         else:  # COOLING
-            if T_air <= T_sp:
+            if T_ref <= T_sp:
                 self._mode = ThermostatMode.IDLE
 
         if self._mode is ThermostatMode.HEATING:
@@ -353,7 +352,8 @@ class ContainerThermalModel:
         R_in_air = self._R_in_air
 
         # HVAC: thermal power injected into air and associated electrical consumption
-        Q_hvac = self.tms.control(T_air, dt)
+        T_ref = max((c.state.T for c in self._components), default=T_air)
+        Q_hvac = self.tms.control(T_ref, dt)
         P_el = self.hvac.electrical_consumption(Q_hvac)
 
         # battery nodes — compute all dT before write-back

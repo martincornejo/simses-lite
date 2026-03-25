@@ -103,63 +103,63 @@ class TestThermostatStrategy:
     # --- idle within dead-band ---
     def test_idle_no_trigger_within_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q = t.control(T_air=302.0, dt=1.0)
+        Q = t.control(T_ref=302.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_idle_lower_edge_no_trigger(self):
         """Exactly at lower edge (T_sp - threshold) should not trigger heating."""
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q = t.control(T_air=295.0, dt=1.0)
+        Q = t.control(T_ref=295.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_idle_upper_edge_no_trigger(self):
         """Exactly at upper edge (T_sp + threshold) should not trigger cooling."""
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q = t.control(T_air=305.0, dt=1.0)
+        Q = t.control(T_ref=305.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     # --- heating transitions ---
     def test_idle_triggers_heating_below_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q = t.control(T_air=294.0, dt=1.0)
+        Q = t.control(T_ref=294.0, dt=1.0)
         assert Q == pytest.approx(5000.0)
         assert t.mode is ThermostatMode.HEATING
 
     def test_heating_stops_at_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        t.control(T_air=290.0, dt=1.0)  # enter heating
-        Q = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
+        t.control(T_ref=290.0, dt=1.0)  # enter heating
+        Q = t.control(T_ref=300.0, dt=1.0)  # at setpoint → idle
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_heating_continues_below_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        t.control(T_air=290.0, dt=1.0)  # enter heating
-        Q = t.control(T_air=298.0, dt=1.0)  # still below setpoint
+        t.control(T_ref=290.0, dt=1.0)  # enter heating
+        Q = t.control(T_ref=298.0, dt=1.0)  # still below setpoint
         assert Q == pytest.approx(5000.0)
         assert t.mode is ThermostatMode.HEATING
 
     # --- cooling transitions ---
     def test_idle_triggers_cooling_above_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q = t.control(T_air=306.0, dt=1.0)
+        Q = t.control(T_ref=306.0, dt=1.0)
         assert Q == pytest.approx(-5000.0)
         assert t.mode is ThermostatMode.COOLING
 
     def test_cooling_stops_at_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        t.control(T_air=310.0, dt=1.0)  # enter cooling
-        Q = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
+        t.control(T_ref=310.0, dt=1.0)  # enter cooling
+        Q = t.control(T_ref=300.0, dt=1.0)  # at setpoint → idle
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_cooling_continues_above_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        t.control(T_air=310.0, dt=1.0)  # enter cooling
-        Q = t.control(T_air=302.0, dt=1.0)  # still above setpoint
+        t.control(T_ref=310.0, dt=1.0)  # enter cooling
+        Q = t.control(T_ref=302.0, dt=1.0)  # still above setpoint
         assert Q == pytest.approx(-5000.0)
         assert t.mode is ThermostatMode.COOLING
 
@@ -167,9 +167,9 @@ class TestThermostatStrategy:
     def test_no_cooling_trigger_inside_band_after_heating(self):
         """After heating stops, must not immediately trigger cooling."""
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        t.control(T_air=290.0, dt=1.0)  # → HEATING
-        t.control(T_air=300.0, dt=1.0)  # → IDLE at setpoint
-        Q = t.control(T_air=303.0, dt=1.0)  # inside band, should stay IDLE
+        t.control(T_ref=290.0, dt=1.0)  # → HEATING
+        t.control(T_ref=300.0, dt=1.0)  # → IDLE at setpoint
+        Q = t.control(T_ref=303.0, dt=1.0)  # inside band, should stay IDLE
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
