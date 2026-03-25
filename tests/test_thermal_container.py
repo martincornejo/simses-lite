@@ -50,12 +50,13 @@ def _unit_box_container() -> ContainerProperties:
     )
 
 
-def _make_model(T_ambient=298.15, T_initial=298.15, hvac=None):
+def _make_model(T_ambient=298.15, T_initial=298.15, tms=None, hvac=None, properties=None):
     return ContainerThermalModel(
-        properties=_unit_box_container(),
+        properties=properties if properties is not None else _unit_box_container(),
         T_ambient=T_ambient,
         T_initial=T_initial,
-        hvac=hvac,
+        tms=tms if tms is not None else ThermostatStrategy(T_setpoint=298.15, max_power=0.0),
+        hvac=hvac if hvac is not None else ConstantCopHvac(),
     )
 
 
@@ -91,7 +92,7 @@ class TestContainerProperties:
 class TestThermostatStrategy:
     def _make(self, T_setpoint=300.0, max_power=5000.0, threshold=5.0):
         return ThermostatStrategy(
-            T_setpoint=T_setpoint, max_power=max_power, hvac=ConstantCopHvac(), threshold=threshold
+            T_setpoint=T_setpoint, max_power=max_power, threshold=threshold
         )
 
     # --- initial mode ---
@@ -102,63 +103,63 @@ class TestThermostatStrategy:
     # --- idle within dead-band ---
     def test_idle_no_trigger_within_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q, _ = t.control(T_air=302.0, dt=1.0)
+        Q = t.control(T_air=302.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_idle_lower_edge_no_trigger(self):
         """Exactly at lower edge (T_sp - threshold) should not trigger heating."""
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q, _ = t.control(T_air=295.0, dt=1.0)
+        Q = t.control(T_air=295.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_idle_upper_edge_no_trigger(self):
         """Exactly at upper edge (T_sp + threshold) should not trigger cooling."""
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q, _ = t.control(T_air=305.0, dt=1.0)
+        Q = t.control(T_air=305.0, dt=1.0)
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     # --- heating transitions ---
     def test_idle_triggers_heating_below_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q, _ = t.control(T_air=294.0, dt=1.0)
+        Q = t.control(T_air=294.0, dt=1.0)
         assert Q == pytest.approx(5000.0)
         assert t.mode is ThermostatMode.HEATING
 
     def test_heating_stops_at_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
         t.control(T_air=290.0, dt=1.0)  # enter heating
-        Q, _ = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
+        Q = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_heating_continues_below_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
         t.control(T_air=290.0, dt=1.0)  # enter heating
-        Q, _ = t.control(T_air=298.0, dt=1.0)  # still below setpoint
+        Q = t.control(T_air=298.0, dt=1.0)  # still below setpoint
         assert Q == pytest.approx(5000.0)
         assert t.mode is ThermostatMode.HEATING
 
     # --- cooling transitions ---
     def test_idle_triggers_cooling_above_band(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
-        Q, _ = t.control(T_air=306.0, dt=1.0)
+        Q = t.control(T_air=306.0, dt=1.0)
         assert Q == pytest.approx(-5000.0)
         assert t.mode is ThermostatMode.COOLING
 
     def test_cooling_stops_at_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
         t.control(T_air=310.0, dt=1.0)  # enter cooling
-        Q, _ = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
+        Q = t.control(T_air=300.0, dt=1.0)  # at setpoint → idle
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
     def test_cooling_continues_above_setpoint(self):
         t = self._make(T_setpoint=300.0, threshold=5.0)
         t.control(T_air=310.0, dt=1.0)  # enter cooling
-        Q, _ = t.control(T_air=302.0, dt=1.0)  # still above setpoint
+        Q = t.control(T_air=302.0, dt=1.0)  # still above setpoint
         assert Q == pytest.approx(-5000.0)
         assert t.mode is ThermostatMode.COOLING
 
@@ -168,7 +169,7 @@ class TestThermostatStrategy:
         t = self._make(T_setpoint=300.0, threshold=5.0)
         t.control(T_air=290.0, dt=1.0)  # → HEATING
         t.control(T_air=300.0, dt=1.0)  # → IDLE at setpoint
-        Q, _ = t.control(T_air=303.0, dt=1.0)  # inside band, should stay IDLE
+        Q = t.control(T_air=303.0, dt=1.0)  # inside band, should stay IDLE
         assert Q == pytest.approx(0.0)
         assert t.mode is ThermostatMode.IDLE
 
@@ -216,7 +217,7 @@ class TestContainerThermalModelUnit:
         """
         from simses.model.thermal.containers import FortyFtContainer
 
-        model = ContainerThermalModel(properties=FortyFtContainer, T_ambient=250.0, T_initial=350.0)
+        model = _make_model(properties=FortyFtContainer, T_ambient=250.0, T_initial=350.0)
         T_in_before = 350.0
         for _ in range(300):
             model.update(dt=1.0)
@@ -226,11 +227,10 @@ class TestContainerThermalModelUnit:
         """HVAC in heating mode raises T_air above the no-HVAC baseline."""
         # Start cold: T_initial well below setpoint to trigger heating immediately
         T_sp = 298.15
-        hvac = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, hvac=ConstantCopHvac(), threshold=5.0)
-        model_hvac = ContainerThermalModel(
-            properties=_unit_box_container(), T_ambient=270.0, T_initial=280.0, hvac=hvac
-        )
-        model_no = ContainerThermalModel(properties=_unit_box_container(), T_ambient=270.0, T_initial=280.0, hvac=None)
+        tms = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, threshold=5.0)
+        hvac = ConstantCopHvac()
+        model_hvac = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
+        model_no = _make_model(T_ambient=270.0, T_initial=280.0)
         model_hvac.update(dt=10.0)
         model_no.update(dt=10.0)
         assert model_hvac.state.T_air > model_no.state.T_air
@@ -238,11 +238,10 @@ class TestContainerThermalModelUnit:
     def test_hvac_cooling_lowers_T_air(self):
         """HVAC in cooling mode lowers T_air below the no-HVAC baseline."""
         T_sp = 298.15
-        hvac = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, hvac=ConstantCopHvac(), threshold=5.0)
-        model_hvac = ContainerThermalModel(
-            properties=_unit_box_container(), T_ambient=320.0, T_initial=310.0, hvac=hvac
-        )
-        model_no = ContainerThermalModel(properties=_unit_box_container(), T_ambient=320.0, T_initial=310.0, hvac=None)
+        tms = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, threshold=5.0)
+        hvac = ConstantCopHvac()
+        model_hvac = _make_model(T_ambient=320.0, T_initial=310.0, tms=tms, hvac=hvac)
+        model_no = _make_model(T_ambient=320.0, T_initial=310.0)
         model_hvac.update(dt=10.0)
         model_no.update(dt=10.0)
         assert model_hvac.state.T_air < model_no.state.T_air
@@ -288,7 +287,7 @@ class TestContainerThermalModelUnit:
         dT_air = (Q_bat_to_air + Q_in_to_air) / C_air
         T_air_expected = T_air0 + dT_air * dt
 
-        model = ContainerThermalModel(properties=props, T_ambient=298.15, T_initial=T_air0)
+        model = _make_model(properties=props, T_ambient=298.15, T_initial=T_air0)
         comp = _MockComponent(T=T_bat0, loss=Q_loss, thermal_capacity=5000.0, thermal_resistance=R_bat)
         model.add_component(comp)
         model.update(dt=dt)
@@ -307,11 +306,7 @@ class TestContainerThermalModelIntegration:
         limit (τ_air ≈ 21 s for a 40-ft container).
         """
         bat = _make_battery(T=298.15, soc=0.5)
-        model = ContainerThermalModel(
-            properties=FortyFtContainer,
-            T_ambient=298.15,
-            T_initial=298.15,
-        )
+        model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
 
         for _ in range(100):
@@ -324,11 +319,7 @@ class TestContainerThermalModelIntegration:
     def test_hot_battery_at_rest_cools_toward_air(self):
         """Hot battery with no power input cools toward T_air."""
         bat = _make_battery(T=320.0, soc=0.5)
-        model = ContainerThermalModel(
-            properties=_unit_box_container(),
-            T_ambient=298.15,
-            T_initial=298.15,
-        )
+        model = _make_model()
         model.add_component(bat)
 
         bat.update(power_setpoint=0.0, dt=1.0)
@@ -339,11 +330,7 @@ class TestContainerThermalModelIntegration:
 
     def test_forty_ft_container_runs_without_error(self):
         bat = _make_battery(T=298.15, soc=0.5)
-        model = ContainerThermalModel(
-            properties=FortyFtContainer,
-            T_ambient=298.15,
-            T_initial=298.15,
-        )
+        model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
         for _ in range(5):
             bat.update(power_setpoint=500.0, dt=60.0)
@@ -351,11 +338,7 @@ class TestContainerThermalModelIntegration:
 
     def test_twenty_ft_container_runs_without_error(self):
         bat = _make_battery(T=298.15, soc=0.5)
-        model = ContainerThermalModel(
-            properties=TwentyFtContainer,
-            T_ambient=298.15,
-            T_initial=298.15,
-        )
+        model = _make_model(properties=TwentyFtContainer)
         model.add_component(bat)
         for _ in range(5):
             bat.update(power_setpoint=500.0, dt=60.0)
@@ -364,11 +347,7 @@ class TestContainerThermalModelIntegration:
     def test_100_steps_physical_temperature_bounds(self):
         """Over 100 steps at dt=1 s, all temperatures remain physically plausible (200–400 K)."""
         bat = _make_battery(T=298.15, soc=0.5)
-        model = ContainerThermalModel(
-            properties=FortyFtContainer,
-            T_ambient=298.15,
-            T_initial=298.15,
-        )
+        model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
 
         for _ in range(100):
@@ -383,57 +362,35 @@ class TestContainerThermalModelIntegration:
 
 
 # ===================================================================
-# ThermostatStrategy — electrical power (COP model)
+# ConstantCopHvac — electrical consumption model
 # ===================================================================
-class TestThermostatStrategyPowerEl:
-    def _make(self, T_setpoint=300.0, max_power=5000.0, cop_cooling=3.0, cop_heating=2.5):
-        return ThermostatStrategy(
-            T_setpoint=T_setpoint,
-            max_power=max_power,
-            hvac=ConstantCopHvac(cop_cooling=cop_cooling, cop_heating=cop_heating),
-        )
+class TestConstantCopHvac:
+    def test_zero_thermal_gives_zero_electrical(self):
+        hvac = ConstantCopHvac()
+        assert hvac.electrical_consumption(0.0) == pytest.approx(0.0)
 
-    def test_power_el_zero_when_idle(self):
-        t = self._make()
-        _, P_el = t.control(T_air=300.0, dt=1.0)  # within band → idle
-        assert P_el == pytest.approx(0.0)
+    def test_heating_consumption(self):
+        """Heating (Q > 0): P_el = Q / cop_heating."""
+        hvac = ConstantCopHvac(cop_heating=2.5)
+        assert hvac.electrical_consumption(6000.0) == pytest.approx(6000.0 / 2.5)
 
-    def test_power_el_heating(self):
-        """Heating: P_el = max_power / cop_heating."""
-        t = self._make(max_power=6000.0, cop_heating=2.5)
-        _, P_el = t.control(T_air=290.0, dt=1.0)  # trigger heating
-        assert P_el == pytest.approx(6000.0 / 2.5)
+    def test_cooling_consumption(self):
+        """Cooling (Q < 0): P_el = |Q| / cop_cooling."""
+        hvac = ConstantCopHvac(cop_cooling=3.0)
+        assert hvac.electrical_consumption(-6000.0) == pytest.approx(6000.0 / 3.0)
 
-    def test_power_el_cooling(self):
-        """Cooling: P_el = max_power / cop_cooling."""
-        t = self._make(max_power=6000.0, cop_cooling=3.0)
-        _, P_el = t.control(T_air=310.0, dt=1.0)  # trigger cooling
-        assert P_el == pytest.approx(6000.0 / 3.0)
-
-    def test_power_el_resets_to_zero_on_idle(self):
-        """P_el drops to 0 once the unit returns to idle."""
-        t = self._make(max_power=5000.0, cop_heating=2.5)
-        _, P_el = t.control(T_air=290.0, dt=1.0)  # → HEATING, P_el > 0
-        assert P_el > 0.0
-        _, P_el = t.control(T_air=300.0, dt=1.0)  # → IDLE
-        assert P_el == pytest.approx(0.0)
-
-    def test_power_el_always_non_negative(self):
-        """P_el is ≥ 0 in all modes."""
-        t = self._make()
-        for T in [285.0, 300.0, 315.0]:
-            _, P_el = t.control(T_air=T, dt=1.0)
-            assert P_el >= 0.0
+    def test_always_non_negative(self):
+        """P_el is ≥ 0 for any thermal power."""
+        hvac = ConstantCopHvac()
+        for Q in [-5000.0, 0.0, 5000.0]:
+            assert hvac.electrical_consumption(Q) >= 0.0
 
     def test_custom_cop_values(self):
-        """Custom COP values are respected independently for each mode."""
+        """Custom COP values are respected independently for each direction."""
         cop_c, cop_h = 4.5, 3.2
-        t = self._make(max_power=8000.0, cop_cooling=cop_c, cop_heating=cop_h)
-        _, P_el = t.control(T_air=290.0, dt=1.0)  # → HEATING
-        assert P_el == pytest.approx(8000.0 / cop_h)
-        t.control(T_air=300.0, dt=1.0)  # → IDLE
-        _, P_el = t.control(T_air=310.0, dt=1.0)  # → COOLING
-        assert P_el == pytest.approx(8000.0 / cop_c)
+        hvac = ConstantCopHvac(cop_cooling=cop_c, cop_heating=cop_h)
+        assert hvac.electrical_consumption(8000.0) == pytest.approx(8000.0 / cop_h)
+        assert hvac.electrical_consumption(-8000.0) == pytest.approx(8000.0 / cop_c)
 
 
 # ===================================================================
@@ -441,48 +398,44 @@ class TestThermostatStrategyPowerEl:
 # ===================================================================
 class TestContainerThermalModelPowerEl:
     def test_power_el_zero_without_hvac(self):
-        model = _make_model(hvac=None)
+        model = _make_model()  # no-op tms/hvac → Q=0 → P_el=0
         assert model.state.power_el == pytest.approx(0.0)
         model.update(dt=1.0)
         assert model.state.power_el == pytest.approx(0.0)
 
     def test_power_el_zero_when_hvac_idle(self):
         """HVAC within dead-band → power_el stays 0."""
-        hvac = ThermostatStrategy(
-            T_setpoint=298.15, max_power=5000.0, hvac=ConstantCopHvac(), threshold=5.0
-        )
-        model = _make_model(T_ambient=298.15, T_initial=298.15, hvac=hvac)
+        tms = ThermostatStrategy(T_setpoint=298.15, max_power=5000.0, threshold=5.0)
+        hvac = ConstantCopHvac()
+        model = _make_model(T_ambient=298.15, T_initial=298.15, tms=tms, hvac=hvac)
         model.update(dt=1.0)
         assert model.state.power_el == pytest.approx(0.0)
 
     def test_power_el_positive_when_heating(self):
         """HVAC in heating mode → model.state.power_el > 0."""
         cop_h = 2.5
-        hvac = ThermostatStrategy(
-            T_setpoint=300.0, max_power=5000.0, hvac=ConstantCopHvac(cop_heating=cop_h), threshold=5.0
-        )
+        tms = ThermostatStrategy(T_setpoint=300.0, max_power=5000.0, threshold=5.0)
+        hvac = ConstantCopHvac(cop_heating=cop_h)
         # T_initial well below setpoint − threshold → heating triggered immediately
-        model = _make_model(T_ambient=270.0, T_initial=280.0, hvac=hvac)
+        model = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
         model.update(dt=1.0)
         assert model.state.power_el == pytest.approx(5000.0 / cop_h)
 
     def test_power_el_positive_when_cooling(self):
         """HVAC in cooling mode → model.state.power_el > 0."""
         cop_c = 3.0
-        hvac = ThermostatStrategy(
-            T_setpoint=298.15, max_power=5000.0, hvac=ConstantCopHvac(cop_cooling=cop_c), threshold=5.0
-        )
+        tms = ThermostatStrategy(T_setpoint=298.15, max_power=5000.0, threshold=5.0)
+        hvac = ConstantCopHvac(cop_cooling=cop_c)
         # T_initial well above setpoint + threshold → cooling triggered immediately
-        model = _make_model(T_ambient=320.0, T_initial=310.0, hvac=hvac)
+        model = _make_model(T_ambient=320.0, T_initial=310.0, tms=tms, hvac=hvac)
         model.update(dt=1.0)
         assert model.state.power_el == pytest.approx(5000.0 / cop_c)
 
     def test_power_el_reflects_hvac_consumption(self):
         """model.state.power_el reflects the HVAC electrical consumption."""
         cop_h = 2.5
-        hvac = ThermostatStrategy(
-            T_setpoint=300.0, max_power=4000.0, hvac=ConstantCopHvac(cop_heating=cop_h), threshold=5.0
-        )
-        model = _make_model(T_ambient=270.0, T_initial=280.0, hvac=hvac)
+        tms = ThermostatStrategy(T_setpoint=300.0, max_power=4000.0, threshold=5.0)
+        hvac = ConstantCopHvac(cop_heating=cop_h)
+        model = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
         model.update(dt=1.0)
         assert model.state.power_el == pytest.approx(4000.0 / cop_h)

@@ -194,12 +194,10 @@ class ThermostatStrategy:
         self,
         T_setpoint: float,
         max_power: float,
-        hvac: HvacModel,
         threshold: float = 5.0,
     ) -> None:
         self.T_setpoint = T_setpoint
         self.max_power = max_power
-        self.hvac = hvac
         self.threshold = threshold
         self._mode = ThermostatMode.IDLE
 
@@ -208,7 +206,7 @@ class ThermostatStrategy:
         """Current thermostat operating mode."""
         return self._mode
 
-    def control(self, T_air: float, dt: float) -> tuple[float, float]:  # noqa: ARG002
+    def control(self, T_air: float, dt: float) -> tuple[float, float]:
         """Advance the state machine and return ``(Q_thermal, P_el)``.
 
         Args:
@@ -241,7 +239,7 @@ class ThermostatStrategy:
         else:
             Q = 0.0
 
-        return Q, self.hvac.electrical_consumption(Q)
+        return Q
 
 
 class ContainerThermalModel:
@@ -279,10 +277,12 @@ class ContainerThermalModel:
         properties: ContainerProperties,
         T_ambient: float,
         T_initial: float,
-        hvac: ThermalManagementStrategy | None = None,
+        hvac: HvacModel,
+        tms: ThermalManagementStrategy,
     ) -> None:
         self._props = properties
         self.hvac = hvac
+        self.tms = tms
         self._components: list = []
 
         self.state = ContainerThermalState(
@@ -353,10 +353,8 @@ class ContainerThermalModel:
         R_in_air = self._R_in_air
 
         # HVAC: thermal power injected into air and associated electrical consumption
-        if self.hvac is not None:
-            Q_hvac, P_el = self.hvac.control(T_air, dt)
-        else:
-            Q_hvac, P_el = 0.0, 0.0
+        Q_hvac = self.tms.control(T_air, dt)
+        P_el = self.hvac.electrical_consumption(Q_hvac)
 
         # battery nodes — compute all dT before write-back
         bat_dTs: list[float] = []
