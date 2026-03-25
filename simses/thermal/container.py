@@ -42,6 +42,7 @@ class ContainerProperties:
         inner:      Innermost wall layer (e.g. aluminium).
         mid:        Middle wall layer (e.g. insulation).
         outer:      Outermost wall layer (e.g. steel).
+        vol_air:    Factor of volume of the container occupied by air in % (default: 1.0)
         A_surface:  Total surface area in m² (derived).
         V_internal: Internal volume in m³ (derived).
     """
@@ -54,17 +55,17 @@ class ContainerProperties:
     inner: ContainerLayer
     mid: ContainerLayer
     outer: ContainerLayer
+    vol_air : float = 1.0
     A_surface: float = field(init=False)
     V_internal: float = field(init=False)
-    # TODO: add factor of volume occupied by air in container
-
+    
     def __post_init__(self):
         self.A_surface = 2 * (
             self.length * self.width
             + self.length * self.height
             + self.width * self.height
         )
-        self.V_internal = self.length * self.width * self.height
+        self.V_internal = self.length * self.width * self.height * self.vol_air
 
 
 @dataclass
@@ -72,22 +73,22 @@ class ContainerThermalState:
     """Mutable state of a :class:`ContainerThermalModel`.
 
     Attributes:
-        T_air:         Internal air temperature in K.
-        T_in:          Inner wall layer temperature in K.
-        T_mid:         Middle wall layer temperature in K.
-        T_out:         Outer wall layer temperature in K.
-        T_ambient:     External ambient temperature in K.
-        power_thermal: HVAC thermal power delivered to the air in W
-                       (positive = heating, negative = cooling, 0 = idle).
-        power_el:      HVAC electrical power consumption in W (always ≥ 0).
+        T_air:      Internal air temperature in K.
+        T_in:       Inner wall layer temperature in K.
+        T_mid:      Middle wall layer temperature in K.
+        T_out:      Outer wall layer temperature in K.
+        T_ambient:  External ambient temperature in K.
+        power_th:   HVAC thermal power delivered to the air in W
+                    (positive = heating, negative = cooling, 0 = idle).
+        power_el:   HVAC electrical power consumption in W (always ≥ 0).
     """
 
     T_air: float
     T_in: float
     T_mid: float
     T_out: float
-    T_ambient: float
-    power_thermal: float = 0.0
+    T_amb: float
+    power_th: float = 0.0
     power_el: float = 0.0
 
 
@@ -289,7 +290,7 @@ class ContainerThermalModel:
             T_in=T_initial,
             T_mid=T_initial,
             T_out=T_initial,
-            T_ambient=T_ambient,
+            T_amb=T_ambient,
         )
 
         # precompute thermal capacities
@@ -319,11 +320,11 @@ class ContainerThermalModel:
     @property
     def T_ambient(self) -> float:
         """External ambient temperature in K (convenience accessor for ``state.T_ambient``)."""
-        return self.state.T_ambient
+        return self.state.T_amb
 
     @T_ambient.setter
     def T_ambient(self, value: float) -> None:
-        self.state.T_ambient = value
+        self.state.T_amb = value
 
     def add_component(self, component) -> None:
         """Register a component as a thermal node.
@@ -343,7 +344,7 @@ class ContainerThermalModel:
         T_in = self.state.T_in
         T_mid = self.state.T_mid
         T_out = self.state.T_out
-        T_amb = self.state.T_ambient
+        T_amb = self.state.T_amb
 
         # resistances (short names for readability)
         R_air_out = self._R_air_out
@@ -381,7 +382,7 @@ class ContainerThermalModel:
             comp.state.T += dT * dt
 
         self.state.T_air = T_air + dT_air * dt
-        self.state.power_thermal = Q_hvac
+        self.state.power_th = Q_hvac
         self.state.power_el = P_el
 
         self.state.T_in = T_in + dT_in * dt
