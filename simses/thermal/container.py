@@ -78,6 +78,8 @@ class ContainerThermalState:
         T_mid:      Middle wall layer temperature in K.
         T_out:      Outer wall layer temperature in K.
         T_ambient:  External ambient temperature in K.
+        Q_solar:    Solar irradiance heat load on the outer wall in W
+                    (default 0).
         power_th:   HVAC thermal power delivered to the air in W
                     (positive = heating, negative = cooling, 0 = idle).
         power_el:   HVAC electrical power consumption in W (always ≥ 0).
@@ -88,6 +90,7 @@ class ContainerThermalState:
     T_mid: float
     T_out: float
     T_amb: float
+    Q_solar: float = 0.0
     power_th: float = 0.0
     power_el: float = 0.0
 
@@ -241,6 +244,31 @@ class ThermostatStrategy:
         return Q
 
 
+class ExternalThermalManagement:
+    """Pass-through thermal management strategy for external controllers.
+
+    Instead of computing HVAC power internally, this strategy returns a
+    value set externally via the :attr:`Q_hvac` property.  Use this when
+    an external controller (e.g. MPC) decides the thermal power.
+
+    Example::
+
+        tms = ExternalThermalManagement()
+        container = ContainerThermalModel(..., tms=tms)
+
+        # In the simulation loop:
+        tms.Q_hvac = mpc_computed_power
+        container.update(dt=1.0)
+    """
+
+    def __init__(self) -> None:
+        self.Q_hvac: float = 0.0
+
+    def control(self, T_ref: float, dt: float) -> float:  # noqa: ARG002
+        """Return the externally-set thermal power."""
+        return self.Q_hvac
+
+
 class ContainerThermalModel:
     """Physics-based container thermal model with three-layer walls and HVAC.
 
@@ -325,6 +353,15 @@ class ContainerThermalModel:
     def T_ambient(self, value: float) -> None:
         self.state.T_amb = value
 
+    @property
+    def Q_solar(self) -> float:
+        """Solar irradiance heat load on the outer wall in W."""
+        return self.state.Q_solar
+
+    @Q_solar.setter
+    def Q_solar(self, value: float) -> None:
+        self.state.Q_solar = value
+
     def add_component(self, component) -> None:
         """Register a component as a thermal node.
 
@@ -373,7 +410,7 @@ class ContainerThermalModel:
         # wall nodes
         dT_in = ((T_mid - T_in) / R_mid_in - (T_in - T_air) / R_in_air) / self._C_in
         dT_mid = ((T_out - T_mid) / R_out_mid - (T_mid - T_in) / R_mid_in) / self._C_mid
-        dT_out = ((T_amb - T_out) / R_air_out - (T_out - T_mid) / R_out_mid) / self._C_out
+        dT_out = (self.state.Q_solar + (T_amb - T_out) / R_air_out - (T_out - T_mid) / R_out_mid) / self._C_out
 
         # write back — batteries first, then state, then walls
         for comp, dT in zip(self._components, bat_dTs, strict=True):
