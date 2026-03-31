@@ -28,39 +28,34 @@ class SonyLFPCyclicDegradation(CyclicDegradation):
 
     Capacity loss follows a sqrt(FEC) model with virtual FEC continuation.
     Resistance increase is linear in FEC.
+
+    This model is **stateless**: accumulated values are owned by the
+    :class:`~simses.degradation.degradation.DegradationModel` and passed in
+    on every call.
     """
 
-    def __init__(self) -> None:
-        self._accumulated_qloss: float = 0.0  # cumulative capacity loss in p.u.
-        self._accumulated_rinc: float = 0.0  # cumulative resistance increase in p.u.
-
-    def update(self, state: BatteryState, half_cycle: HalfCycle) -> tuple[float, float]:
-        dod = half_cycle.depth_of_discharge
-        crate = half_cycle.c_rate
+    def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         delta_fec = half_cycle.full_equivalent_cycles
-
         if delta_fec == 0.0:
-            return 0.0, 0.0
+            return 0.0
 
-        # --- Capacity loss (sqrt(FEC) with virtual FEC) ---
-        k_crate_q = A_QLOSS * crate + B_QLOSS
-        k_dod_q = C_QLOSS * (dod - 0.6) ** 3 + D_QLOSS
-
+        k_crate_q = A_QLOSS * half_cycle.c_rate + B_QLOSS
+        k_dod_q = C_QLOSS * (half_cycle.depth_of_discharge - 0.6) ** 3 + D_QLOSS
         stress_q = k_crate_q * k_dod_q
+
         if stress_q > 0.0:
-            virtual_fec = (self._accumulated_qloss * 100.0 / stress_q) ** 2
-            new_total_qloss = stress_q * math.sqrt(virtual_fec + delta_fec) / 100.0
-            delta_q = new_total_qloss - self._accumulated_qloss
+            virtual_fec = (accumulated_qloss * 100.0 / stress_q) ** 2
+            delta_q = stress_q * math.sqrt(virtual_fec + delta_fec) / 100.0 - accumulated_qloss
         else:
             delta_q = 0.0
 
-        self._accumulated_qloss += delta_q
+        return delta_q
 
-        # --- Resistance increase (linear in FEC) ---
-        k_crate_r = A_RINC * crate + B_RINC
-        k_dod_r = C_RINC * (dod - 0.5) ** 3 + D_RINC
-        delta_r = k_crate_r * k_dod_r * delta_fec / 100.0
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+        delta_fec = half_cycle.full_equivalent_cycles
+        if delta_fec == 0.0:
+            return 0.0
 
-        self._accumulated_rinc += delta_r
-
-        return -delta_q, delta_r
+        k_crate_r = A_RINC * half_cycle.c_rate + B_RINC
+        k_dod_r = C_RINC * (half_cycle.depth_of_discharge - 0.5) ** 3 + D_RINC
+        return k_crate_r * k_dod_r * delta_fec / 100.0

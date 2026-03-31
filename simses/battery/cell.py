@@ -4,6 +4,7 @@ from simses.battery.format import CellFormat
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.battery.state import BatteryState
 from simses.degradation.degradation import DegradationModel
+from simses.degradation.state import DegradationState
 
 
 class CellType(ABC):
@@ -56,6 +57,11 @@ class CellType(ABC):
         """Compute entropic coefficient (in V/K) for a given battery state. Default is 0."""
         return 0.0
 
-    def default_degradation_model(self, initial_soc: float) -> DegradationModel | None:
+    @classmethod
+    def default_degradation_model(
+        cls,
+        initial_soc: float,
+        initial_state: DegradationState | None = None,
+    ) -> DegradationModel | None:
         """Return the cell's built-in default degradation model, or None if not defined."""
         return None

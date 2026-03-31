@@ -7,20 +7,36 @@ from simses.degradation.cycle_detector import HalfCycle
 class CyclicDegradation(Protocol):
     """Protocol for cyclic aging models.
 
-    Implementations compute incremental capacity fade and resistance increase
-    based on half-cycle stress factors (DOD, mean SOC, C-rate).
+    Implementations are **stateless**: all accumulated values live in
+    :class:`~simses.degradation.state.DegradationState` (owned by the
+    :class:`~simses.degradation.degradation.DegradationModel`).  The current
+    accumulated values are passed in on every call so that models using
+    virtual-FEC continuation can compute the correct increments without
+    maintaining their own internal state.
     """
 
-    def update(self, state: BatteryState, half_cycle: HalfCycle) -> tuple[float, float]:
-        """Compute incremental cyclic degradation for a completed half-cycle.
+    def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
+        """Compute incremental cyclic capacity loss for a completed half-cycle.
+
+        Args:
+            state: Current battery state.
+            half_cycle: Stress factors of the completed half-cycle.
+            accumulated_qloss: Cyclic capacity loss accumulated so far (p.u.,
+                positive), used to seed virtual-FEC continuation.
+
+        Returns:
+            delta_qloss — positive increment in p.u. (capacity loss increases).
+        """
+        ...
+
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+        """Compute incremental cyclic resistance increase for a completed half-cycle.
 
         Args:
             state: Current battery state.
             half_cycle: Stress factors of the completed half-cycle.
 
         Returns:
-            (delta_soh_Q, delta_soh_R) — incremental changes in p.u.
-            delta_soh_Q is negative (capacity loss), delta_soh_R is positive
-            (resistance increase).
+            delta_soh_R — positive increment in p.u. (resistance increases).
         """
         ...

@@ -27,7 +27,10 @@ class Battery:
                 optionally ``start_soh_Q`` / ``start_soh_R``.
             soc_limits: ``(soc_min, soc_max)`` operating window in p.u.
             degradation: Degradation model, or ``True`` to use the cell's
-                default, or ``None`` / ``False`` to disable.
+                default (fresh battery, no prior aging history), or ``None`` /
+                ``False`` to disable. To warm-start from a known degradation
+                state, pass an explicit ``DegradationModel`` constructed with
+                an ``initial_state``.
             derating: Optional current-derating strategy applied after hard
                 limits.
             effective_cooling_area: Fraction of the total cell surface area

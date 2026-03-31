@@ -17,27 +17,33 @@ from tests.test_battery import SimpleCell, _make_battery
 class MockCalendar(CalendarDegradation):
     """Calendar model that returns fixed deltas per call."""
 
-    def __init__(self, dq: float = -1e-6, dr: float = 1e-6) -> None:
+    def __init__(self, dq: float = 1e-6, dr: float = 1e-6) -> None:
         self.dq = dq
         self.dr = dr
         self.call_count = 0
 
-    def update(self, state: BatteryState, dt: float) -> tuple[float, float]:
+    def update_capacity(self, state: BatteryState, dt: float, accumulated_qloss: float) -> float:
         self.call_count += 1
-        return self.dq, self.dr
+        return self.dq
+
+    def update_resistance(self, state: BatteryState, dt: float) -> float:
+        return self.dr
 
 
 class MockCyclic(CyclicDegradation):
     """Cyclic model that returns fixed deltas per call."""
 
-    def __init__(self, dq: float = -1e-4, dr: float = 1e-4) -> None:
+    def __init__(self, dq: float = 1e-4, dr: float = 1e-4) -> None:
         self.dq = dq
         self.dr = dr
         self.call_count = 0
 
-    def update(self, state: BatteryState, half_cycle: HalfCycle) -> tuple[float, float]:
+    def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         self.call_count += 1
-        return self.dq, self.dr
+        return self.dq
+
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+        return self.dr
 
 
 # ===================================================================
@@ -114,7 +120,7 @@ class TestDegradationModel:
 
     def test_soh_q_decreases(self):
         """soh_Q should decrease over time with calendar aging."""
-        cal = MockCalendar(dq=-1e-4, dr=0.0)
+        cal = MockCalendar(dq=1e-4, dr=0.0)
         model = DegradationModel.calendar_only(calendar=cal, initial_soc=0.5)
 
         state = BatteryState(
@@ -204,7 +210,7 @@ class TestDegradationModel:
 
     def test_cyclic_only_no_calendar(self):
         """cyclic_only should not apply calendar changes."""
-        cyc = MockCyclic(dq=-1e-3, dr=1e-3)
+        cyc = MockCyclic(dq=1e-3, dr=1e-3)
         model = DegradationModel.cyclic_only(cyclic=cyc, initial_soc=0.5)
 
         state = BatteryState(
@@ -246,8 +252,8 @@ class TestBatteryDegradationIntegration:
 
     def test_soh_degrades_over_cycles(self):
         """With degradation, SoH should change after charge/discharge cycles."""
-        cal = MockCalendar(dq=-1e-5, dr=1e-5)
-        cyc = MockCyclic(dq=-1e-4, dr=1e-4)
+        cal = MockCalendar(dq=1e-5, dr=1e-5)
+        cyc = MockCyclic(dq=1e-4, dr=1e-4)
         model = DegradationModel(calendar=cal, cyclic=cyc, initial_soc=0.5)
 
         bat = Battery(

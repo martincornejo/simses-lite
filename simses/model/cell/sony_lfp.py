@@ -9,6 +9,7 @@ from simses.battery.battery import BatteryState, CellType
 from simses.battery.format import RoundCell26650
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.degradation import DegradationModel
+from simses.degradation.state import DegradationState
 from simses.model.degradation.sony_lfp_calendar import SonyLFPCalendarDegradation
 from simses.model.degradation.sony_lfp_cyclic import SonyLFPCyclicDegradation
 
@@ -93,9 +94,15 @@ class SonyLFP(CellType):
             rint = self._rint_dch_interp2d((state.soc, state.T))
         return float(rint)
 
-    def default_degradation_model(self, initial_soc: float) -> DegradationModel:
+    @classmethod
+    def default_degradation_model(
+        cls,
+        initial_soc: float,
+        initial_state: DegradationState | None = None,
+    ) -> DegradationModel:
         return DegradationModel(
             cyclic=SonyLFPCyclicDegradation(),
             calendar=SonyLFPCalendarDegradation(),
             initial_soc=initial_soc,
+            initial_state=initial_state,
         )
