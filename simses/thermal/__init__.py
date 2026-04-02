@@ -1,3 +1,4 @@
+from simses.thermal.ambient import AmbientThermalModel
 from simses.thermal.container import (
     ConstantCopHvac,
     ContainerLayer,
@@ -10,7 +11,7 @@ from simses.thermal.container import (
     ThermostatMode,
     ThermostatStrategy,
 )
-from simses.thermal.ambient import AmbientThermalModel
+from simses.thermal.solar import SolarConfig, solar_heat_load
 
 __all__ = [
     "AmbientThermalModel",
@@ -21,7 +22,9 @@ __all__ = [
     "ContainerThermalState",
     "ExternalThermalManagement",
     "HvacModel",
+    "SolarConfig",
     "ThermalManagementStrategy",
     "ThermostatMode",
     "ThermostatStrategy",
+    "solar_heat_load",
 ]
