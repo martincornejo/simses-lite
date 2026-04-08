@@ -1,15 +1,13 @@
-import math
 import os
 
-import numpy as np
 import pandas as pd
-from scipy.interpolate import RegularGridInterpolator
 
 from simses.battery.battery import BatteryState, CellType
 from simses.battery.format import RoundCell26650
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
 from simses.degradation import DegradationModel
 from simses.degradation.state import DegradationState
+from simses.interpolation import interp1d_scalar, interp2d_scalar
 from simses.model.degradation.sony_lfp_calendar import SonyLFPCalendarDegradation
 from simses.model.degradation.sony_lfp_cyclic import SonyLFPCyclicDegradation
 
@@ -42,57 +40,42 @@ class SonyLFP(CellType):
             ),
             cell_format=RoundCell26650(),
         )
-        path = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
-        ## OCV look-up table
-        file_ocv = os.path.join(path, "data", "CLFP_Sony_US26650_OCV.csv")
-        df_ocv = pd.read_csv(file_ocv)
-        self._ocv_lut_soc = df_ocv["SOC"].to_numpy()
-        self._ocv_lut_ocv = df_ocv["OCV"].to_numpy()
+        # 1-D look-up tables. Stored as plain Python lists so the scalar
+        # interpolation helpers can use bisect on the raw sequence without
+        # numpy boundary overhead.
+        df_ocv = pd.read_csv(os.path.join(path, "CLFP_Sony_US26650_OCV.csv"))
+        self._ocv_lut_soc = df_ocv["SOC"].tolist()
+        self._ocv_lut_ocv = df_ocv["OCV"].tolist()
 
-        ## Hystheresis look-up table
-        file_hyst = os.path.join(path, "data", "CLFP_Sony_US26650_HystV.csv")
-        df_hyst = pd.read_csv(file_hyst)
-        self._hyst_lut_soc = df_hyst["SOC"].to_numpy()
-        self._hyst_lut_hyst = df_hyst["HystV"].to_numpy()
+        df_hyst = pd.read_csv(os.path.join(path, "CLFP_Sony_US26650_HystV.csv"))
+        self._hyst_lut_soc = df_hyst["SOC"].tolist()
+        self._hyst_lut_hyst = df_hyst["HystV"].tolist()
 
-        # entropic coefficient look-up table
-        file_entropy = os.path.join(path, "data", "CLFP_Sony_US26650_entropy.csv")
-        df_entropy = pd.read_csv(file_entropy)
-        self._entropy_lut_soc = df_entropy["SOC"].to_numpy()
-        self._entropy_lut_entropy = df_entropy["S"].to_numpy()
+        df_entropy = pd.read_csv(os.path.join(path, "CLFP_Sony_US26650_entropy.csv"))
+        self._entropy_lut_soc = df_entropy["SOC"].tolist()
+        self._entropy_lut_entropy = df_entropy["S"].tolist()
 
-        ## internal resistance 2D look-up table
-        file_rint = os.path.join(path, "data", "CLFP_Sony_US26650_Rint.csv")
-        df_rint = pd.read_csv(file_rint)
-
-        soc_rint = df_rint["SOC"]
-        T_rint = df_rint["Temp"].dropna()
-
-        rint_mat_ch = np.array(df_rint.iloc[:, 2:6])
-        rint_mat_dch = np.array(df_rint.iloc[:, 6:])
-
-        self._rint_ch_interp2d = RegularGridInterpolator((soc_rint, T_rint), np.array(rint_mat_ch))
-        self._rint_dch_interp2d = RegularGridInterpolator((soc_rint, T_rint), np.array(rint_mat_dch))
+        # 2-D internal-resistance look-up tables (charge / discharge).
+        df_rint = pd.read_csv(os.path.join(path, "CLFP_Sony_US26650_Rint.csv"))
+        self._rint_lut_soc = df_rint["SOC"].tolist()
+        self._rint_lut_T = df_rint["Temp"].dropna().tolist()
+        self._rint_ch_mat = df_rint.iloc[:, 2:6].values.tolist()
+        self._rint_dch_mat = df_rint.iloc[:, 6:].values.tolist()
 
     def open_circuit_voltage(self, state: BatteryState) -> float:
-        soc = state.soc
-        return float(np.interp(soc, self._ocv_lut_soc, self._ocv_lut_ocv))
+        return interp1d_scalar(state.soc, self._ocv_lut_soc, self._ocv_lut_ocv)
 
-    def hystheresis_voltage(self, state):
-        soc = state.soc
-        return float(np.interp(soc, self._hyst_lut_soc, self._hyst_lut_hyst))
+    def hystheresis_voltage(self, state: BatteryState) -> float:
+        return interp1d_scalar(state.soc, self._hyst_lut_soc, self._hyst_lut_hyst)
 
     def entropic_coefficient(self, state: BatteryState) -> float:
-        soc = state.soc
-        return float(np.interp(soc, self._entropy_lut_soc, self._entropy_lut_entropy))
+        return interp1d_scalar(state.soc, self._entropy_lut_soc, self._entropy_lut_entropy)
 
     def internal_resistance(self, state: BatteryState) -> float:
-        if state.is_charge:
-            rint = self._rint_ch_interp2d((state.soc, state.T))
-        else:
-            rint = self._rint_dch_interp2d((state.soc, state.T))
-        return float(rint)
+        mat = self._rint_ch_mat if state.is_charge else self._rint_dch_mat
+        return interp2d_scalar(state.soc, state.T, self._rint_lut_soc, self._rint_lut_T, mat)
 
     @classmethod
     def default_degradation_model(

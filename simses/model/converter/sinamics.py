@@ -3,6 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from simses.interpolation import interp1d_scalar
+
 
 class SinamicsS120:
     def __init__(self) -> None:
@@ -19,14 +21,14 @@ class SinamicsS120:
         # output_dch = input_dch / df_eff["Discharging"][::10]  # take every 10 item of the lookup table
         output_dch = input_dch / df_eff["Charging"][::10]  # take every 10 item of the lookup table
 
-        self._inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:]))
-        self._out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:]))
+        self._inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:])).tolist()
+        self._out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:])).tolist()
 
     def ac_to_dc(self, power_ac: float) -> float:
-        return float(np.interp(power_ac, self._inp, self._out))
+        return interp1d_scalar(power_ac, self._inp, self._out)
 
     def dc_to_ac(self, power_dc: float) -> float:
-        return float(np.interp(power_dc, self._out, self._inp))
+        return interp1d_scalar(power_dc, self._out, self._inp)
 
 
 class SinamicsS120Fit:
@@ -49,11 +51,11 @@ class SinamicsS120Fit:
         input_dch = -np.linspace(0, 1, 101)
         output_dch = input_dch - loss(input_dch)
 
-        self._inp = np.hstack((input_dch[1:][::-1], 0, input_ch[1:]))
-        self._out = np.hstack((output_dch[1:][::-1], 0, output_ch[1:]))
+        self._inp = np.hstack((input_dch[1:][::-1], 0, input_ch[1:])).tolist()
+        self._out = np.hstack((output_dch[1:][::-1], 0, output_ch[1:])).tolist()
 
     def ac_to_dc(self, power_ac: float) -> float:
-        return float(np.interp(power_ac, self._inp, self._out))
+        return interp1d_scalar(power_ac, self._inp, self._out)
 
     def dc_to_ac(self, power_dc: float) -> float:
-        return float(np.interp(power_dc, self._out, self._inp))
+        return interp1d_scalar(power_dc, self._out, self._inp)
