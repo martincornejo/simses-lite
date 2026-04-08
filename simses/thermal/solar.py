@@ -140,8 +140,7 @@ def solar_heat_load(
 
     # --- Sun elevation ---
     sin_alpha = np.clip(
-        np.cos(h_rad) * np.cos(lat_rad) * np.cos(delta_rad)
-        + np.sin(lat_rad) * np.sin(delta_rad),
+        np.cos(h_rad) * np.cos(lat_rad) * np.cos(delta_rad) + np.sin(lat_rad) * np.sin(delta_rad),
         -1.0,
         1.0,
     )
@@ -154,8 +153,7 @@ def solar_heat_load(
         acos_arg = np.where(
             cos_alpha > 1e-9,
             np.clip(
-                (sin_alpha * np.sin(lat_rad) - np.sin(delta_rad))
-                / (cos_alpha * np.cos(lat_rad)),
+                (sin_alpha * np.sin(lat_rad) - np.sin(delta_rad)) / (cos_alpha * np.cos(lat_rad)),
                 -1.0,
                 1.0,
             ),
@@ -204,7 +202,7 @@ def solar_heat_load(
 
     # Face areas from container geometry
     a_ns = container.length * container.height  # North and South faces
-    a_ew = container.width * container.height   # East and West faces
+    a_ew = container.width * container.height  # East and West faces
     a_roof = container.length * container.width
 
     # Outward-normal azimuths of each face (degrees from North, clockwise)
@@ -224,12 +222,7 @@ def solar_heat_load(
         direct = np.where(cos_aoi > 0.0, dni * cos_aoi, 0.0)
         return area * (direct + diffuse_vert + reflected)
 
-    q_faces = (
-        _face_power(a_ns, az_n)
-        + _face_power(a_ns, az_s)
-        + _face_power(a_ew, az_e)
-        + _face_power(a_ew, az_w)
-    )
+    q_faces = _face_power(a_ns, az_n) + _face_power(a_ns, az_s) + _face_power(a_ew, az_e) + _face_power(a_ew, az_w)
 
     # Roof: full sky diffuse + direct horizontal (no reflected — faces upward)
     q_roof = np.where(above, a_roof * (direct_h + diffuse), 0.0)

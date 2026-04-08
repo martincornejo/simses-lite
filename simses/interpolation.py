@@ -104,9 +104,4 @@ def interp2d_scalar(
 
     one_minus_u = 1.0 - u
     one_minus_v = 1.0 - v
-    return (
-        one_minus_u * one_minus_v * f00
-        + u * one_minus_v * f10
-        + one_minus_u * v * f01
-        + u * v * f11
-    )
+    return one_minus_u * one_minus_v * f00 + u * one_minus_v * f10 + one_minus_u * v * f01 + u * v * f11

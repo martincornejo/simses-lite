@@ -6,18 +6,23 @@ import pytest
 from simses.thermal.container import ContainerLayer, ContainerProperties
 from simses.thermal.solar import SolarConfig, solar_heat_load
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def _simple_container() -> ContainerProperties:
     """20ft container with minimal wall layers (geometry is what matters here)."""
     layer = ContainerLayer(thickness=0.001, conductivity=50.0, density=7800.0, specific_heat=500.0)
     return ContainerProperties(
-        length=6.06, width=2.44, height=2.59,
-        h_inner=5.0, h_outer=15.0,
-        inner=layer, mid=layer, outer=layer,
+        length=6.06,
+        width=2.44,
+        height=2.59,
+        h_inner=5.0,
+        h_outer=15.0,
+        inner=layer,
+        mid=layer,
+        outer=layer,
     )
 
 
@@ -33,6 +38,7 @@ def _ghi_series(timestamps: list[str], values: list[float], tz: str = "Europe/Be
 # ---------------------------------------------------------------------------
 # Basic correctness
 # ---------------------------------------------------------------------------
+
 
 class TestNightAndZeroGhi:
     def test_midnight_returns_zero(self):
@@ -74,6 +80,7 @@ class TestDaytimeProducesPositivePower:
 # Index / timezone handling
 # ---------------------------------------------------------------------------
 
+
 class TestIndexHandling:
     def test_output_index_matches_input(self):
         timestamps = [f"2024-07-15 {h:02d}:00:00" for h in range(24)]
@@ -104,6 +111,7 @@ class TestIndexHandling:
 # ---------------------------------------------------------------------------
 # Geometry and orientation
 # ---------------------------------------------------------------------------
+
 
 class TestKtGreaterThanOne:
     def test_direct_is_zero_when_ghi_exceeds_extraterrestrial(self):

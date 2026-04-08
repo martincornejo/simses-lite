@@ -16,7 +16,7 @@ class TestInterp1dScalar:
     def test_exact_grid_nodes(self):
         xp = [0.0, 1.0, 2.0, 3.0]
         fp = [5.0, 10.0, 20.0, 35.0]
-        for x, f in zip(xp, fp):
+        for x, f in zip(xp, fp, strict=True):
             assert interp1d_scalar(x, xp, fp) == pytest.approx(f)
 
     def test_left_boundary(self):
@@ -164,14 +164,14 @@ class TestInterp2dScalar:
         rgi = RegularGridInterpolator((xp, yp), mat_np, method="linear")
 
         queries = [
-            (0.0, -10.0),   # corner
-            (5.0, 8.0),     # opposite corner
-            (0.05, -5.0),   # interior
-            (0.7, 0.0),     # on y-axis node
-            (1.0, 4.0),     # on x-axis node
+            (0.0, -10.0),  # corner
+            (5.0, 8.0),  # opposite corner
+            (0.05, -5.0),  # interior
+            (0.7, 0.0),  # on y-axis node
+            (1.0, 4.0),  # on x-axis node
             (2.0, -1.0),
             (4.9, 7.99),
-            (0.1, -10.0),   # edge
+            (0.1, -10.0),  # edge
         ]
         for x, y in queries:
             expected = float(rgi((x, y)))

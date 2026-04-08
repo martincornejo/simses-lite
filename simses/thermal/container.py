@@ -55,16 +55,12 @@ class ContainerProperties:
     inner: ContainerLayer
     mid: ContainerLayer
     outer: ContainerLayer
-    vol_air : float = 1.0
+    vol_air: float = 1.0
     A_surface: float = field(init=False)
     V_internal: float = field(init=False)
-    
+
     def __post_init__(self):
-        self.A_surface = 2 * (
-            self.length * self.width
-            + self.length * self.height
-            + self.width * self.height
-        )
+        self.A_surface = 2 * (self.length * self.width + self.length * self.height + self.width * self.height)
         self.V_internal = self.length * self.width * self.height * self.vol_air
 
 
@@ -296,8 +292,8 @@ class ContainerThermalModel:
         hvac:       Optional HVAC strategy; ``None`` means no active HVAC.
     """
 
-    _RHO_AIR: float = 1.204   # kg/m³
-    _CP_AIR: float = 1006.0   # J/kgK
+    _RHO_AIR: float = 1.204  # kg/m³
+    _CP_AIR: float = 1006.0  # J/kgK
 
     def __init__(
         self,
@@ -334,14 +330,8 @@ class ContainerThermalModel:
 
         # precompute thermal resistances
         self._R_air_out = 1.0 / (properties.h_outer * A)
-        self._R_out_mid = (
-            outer.thickness / (outer.conductivity * A)
-            + 0.5 * mid.thickness / (mid.conductivity * A)
-        )
-        self._R_mid_in = (
-            0.5 * mid.thickness / (mid.conductivity * A)
-            + inner.thickness / (inner.conductivity * A)
-        )
+        self._R_out_mid = outer.thickness / (outer.conductivity * A) + 0.5 * mid.thickness / (mid.conductivity * A)
+        self._R_mid_in = 0.5 * mid.thickness / (mid.conductivity * A) + inner.thickness / (inner.conductivity * A)
         self._R_in_air = 1.0 / (properties.h_inner * A)
 
     @property

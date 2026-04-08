@@ -2,7 +2,7 @@
 
 import pytest
 
-from simses.converter.converter import Converter, ConverterState
+from simses.converter.converter import Converter
 from simses.model.converter.fix_efficiency import FixedEfficiency
 
 # Import test utilities from test_battery

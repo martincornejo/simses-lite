@@ -380,7 +380,7 @@ class TestBatteryUpdate:
         for _ in range(10):
             bat.update(power_setpoint=50.0, dt=60.0)
             socs.append(bat.state.soc)
-        assert all(s2 >= s1 for s1, s2 in zip(socs, socs[1:]))
+        assert all(s2 >= s1 for s1, s2 in zip(socs, socs[1:], strict=False))
 
 
 # ===================================================================
@@ -732,14 +732,16 @@ class TestDeratingChain:
         """Chain with active thermal derating reduces current vs. no derating."""
         T = 325.0
         cell = SimpleCell()
-        derating = DeratingChain([
-            LinearVoltageDerating(
-                max_voltage=cell.electrical.max_voltage,
-                min_voltage=cell.electrical.min_voltage,
-                charge_start_voltage=4.0,
-            ),
-            LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15),
-        ])
+        derating = DeratingChain(
+            [
+                LinearVoltageDerating(
+                    max_voltage=cell.electrical.max_voltage,
+                    min_voltage=cell.electrical.min_voltage,
+                    charge_start_voltage=4.0,
+                ),
+                LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15),
+            ]
+        )
         bat_chain = Battery(
             cell=cell,
             circuit=(1, 1),

@@ -91,9 +91,7 @@ class TestContainerProperties:
 # ===================================================================
 class TestThermostatStrategy:
     def _make(self, T_setpoint=300.0, max_power=5000.0, threshold=5.0):
-        return ThermostatStrategy(
-            T_setpoint=T_setpoint, max_power=max_power, threshold=threshold
-        )
+        return ThermostatStrategy(T_setpoint=T_setpoint, max_power=max_power, threshold=threshold)
 
     # --- initial mode ---
     def test_starts_idle(self):
