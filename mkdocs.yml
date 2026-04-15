@@ -1,0 +1,111 @@
+site_name: simses
+site_description: A Python simulator for battery energy storage systems.
+site_author: TUM EES
+site_url: https://tum-ees.github.io/simses/
+
+repo_url: https://github.com/tum-ees/simses
+repo_name: tum-ees/simses
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.indexes
+    - navigation.instant
+    - navigation.sections
+    - navigation.tracking
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            members_order: source
+  - mkdocs-jupyter:
+      execute: true
+      include_source: true
+      remove_tag_config:
+        remove_input_tags:
+          - hide-input
+        remove_all_outputs_tags:
+          - hide-output
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Concepts:
+      - Battery Model: concepts/battery.md
+      - Converter: concepts/converter.md
+      - Degradation: concepts/degradation.md
+      - Thermal Models: concepts/thermal.md
+  - User Guides:
+      - Installation: guides/installation.md
+      - Choosing a Cell Model: guides/cell-models.md
+      - Choosing a Converter Model: guides/converter-models.md
+      - Multi-String Systems: guides/multi-string.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - Demo: tutorials/demo.ipynb
+  - API Reference:
+      - Overview: api/index.md
+      - Battery: api/battery.md
+      - Converter: api/converter.md
+      - Degradation: api/degradation.md
+      - Thermal: api/thermal.md
+      - Models: api/models.md
+  - About: about.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/tum-ees/simses
+
+copyright: Copyright &copy; 2026 TUM EES

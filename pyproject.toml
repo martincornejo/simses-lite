@@ -14,14 +14,26 @@ dependencies = [
     "scipy",
 ]
 
+[project.optional-dependencies]
+notebooks = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.0",
+    "tqdm>=4.67.1",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.7.4",
 ]
-
-[tool.uv.workspace]
-members = ["notebooks"]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "mkdocs-jupyter>=0.25",
+    "pymdown-extensions>=10.0",
+    "simses[notebooks]",
+]
 
 [tool.setuptools.packages.find]
 include = ["simses*"]
