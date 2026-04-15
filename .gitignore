@@ -15,3 +15,7 @@ uv.lock
 # Editor / IDE
 .vscode/
 .claude/
+
+# Documentation build output
+.cache/
+site/
