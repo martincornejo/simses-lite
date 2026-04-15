@@ -36,7 +36,7 @@ docs = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["simses*"]
+where = ["src"]
 
 [tool.ruff]
 # Allow lines to be as long as 120.
