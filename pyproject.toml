@@ -16,12 +16,15 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "jupyter>=1.1.1",
-    "matplotlib>=3.10.0",
     "pytest>=9.0.2",
     "ruff>=0.7.4",
-    "tqdm>=4.67.1",
 ]
+
+[tool.uv.workspace]
+members = ["notebooks"]
+
+[tool.setuptools.packages.find]
+include = ["simses*"]
 
 [tool.ruff]
 # Allow lines to be as long as 120.

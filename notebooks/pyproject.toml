@@ -1,0 +1,14 @@
+[project]
+name = "simses-notebooks"
+version = "0.1.0"
+description = "Jupyter tutorials and demos for simses-lite."
+requires-python = ">=3.12"
+dependencies = [
+    "simses",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.0",
+    "tqdm>=4.67.1",
+]
+
+[tool.uv.sources]
+simses = { workspace = true }
