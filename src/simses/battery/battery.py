@@ -82,7 +82,7 @@ class Battery:
             i_max_discharge=0.0,
         )
         state.ocv = state.v = self.open_circuit_voltage(state)
-        state.hys = self.hystheresis_voltage(state)
+        state.hys = self.hysteresis_voltage(state)
         state.rint = self.internal_resistance(state)
         state.entropy = self.entropic_coefficient(state)
         return state
@@ -106,7 +106,7 @@ class Battery:
         # change during this method, so updating them here is safe and ensures
         # all calculations — including derating — use consistent current values.
         ocv = state.ocv = self.open_circuit_voltage(state)
-        hys = state.hys = self.hystheresis_voltage(state)
+        hys = state.hys = self.hysteresis_voltage(state)
         rint = state.rint = self.internal_resistance(state)
         entropy = state.entropy = self.entropic_coefficient(state)
         Q = self.capacity(state)
@@ -209,11 +209,11 @@ class Battery:
 
         return self.cell.open_circuit_voltage(state) * serial
 
-    def hystheresis_voltage(self, state: BatteryState) -> float:
+    def hysteresis_voltage(self, state: BatteryState) -> float:
         """Return the system-level hysteresis voltage in V."""
         (serial, parallel) = self.circuit
 
-        return self.cell.hystheresis_voltage(state) * serial
+        return self.cell.hysteresis_voltage(state) * serial
 
     def internal_resistance(self, state: BatteryState) -> float:
         """Return the system-level internal resistance in Ohms, scaled by SoH."""

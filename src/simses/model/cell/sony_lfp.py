@@ -67,7 +67,7 @@ class SonyLFP(CellType):
     def open_circuit_voltage(self, state: BatteryState) -> float:
         return interp1d_scalar(state.soc, self._ocv_lut_soc, self._ocv_lut_ocv)
 
-    def hystheresis_voltage(self, state: BatteryState) -> float:
+    def hysteresis_voltage(self, state: BatteryState) -> float:
         return interp1d_scalar(state.soc, self._hyst_lut_soc, self._hyst_lut_hyst)
 
     def entropic_coefficient(self, state: BatteryState) -> float:

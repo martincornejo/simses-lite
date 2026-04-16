@@ -150,13 +150,13 @@ class TestInternalResistance:
 # ===================================================================
 class TestHysteresisVoltage:
     def test_returns_float(self, cell):
-        assert isinstance(cell.hystheresis_voltage(_state()), float)
+        assert isinstance(cell.hysteresis_voltage(_state()), float)
 
     def test_within_reasonable_range(self, cell):
         """Hysteresis voltage magnitude should be smaller than the full voltage window."""
         v_range = cell.electrical.max_voltage - cell.electrical.min_voltage
         for soc in [0.0, 0.25, 0.5, 0.75, 1.0]:
-            hys = cell.hystheresis_voltage(_state(soc=soc))
+            hys = cell.hysteresis_voltage(_state(soc=soc))
             assert abs(hys) < v_range, f"Hysteresis={hys:.4f} exceeds voltage window at SOC={soc}"
 
 

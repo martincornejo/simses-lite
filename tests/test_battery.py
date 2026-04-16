@@ -189,7 +189,7 @@ class TestEquilibriumCurrent:
         state = bat.state
         return (
             bat.open_circuit_voltage(state),
-            bat.hystheresis_voltage(state),
+            bat.hysteresis_voltage(state),
             bat.internal_resistance(state),
         )
 
@@ -234,7 +234,7 @@ class TestCalculateMaxCurrents:
         return (
             state,
             bat.open_circuit_voltage(state),
-            bat.hystheresis_voltage(state),
+            bat.hysteresis_voltage(state),
             bat.internal_resistance(state),
             bat.capacity(state),
         )

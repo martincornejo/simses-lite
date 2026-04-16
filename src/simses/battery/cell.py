@@ -20,7 +20,7 @@ class CellType(ABC):
     Methods:
         open_circuit_voltage(state: BatteryState) -> float:
             Abstract method to compute the open-circuit voltage for a given battery state.
-        hystheresis_voltage(state: BatteryState) -> float:
+        hysteresis_voltage(state: BatteryState) -> float:
             Returns the hysteresis voltage for a given battery state. Default is 0.
         internal_resistance(state: BatteryState) -> float:
             Abstract method to compute the internal resistance (beginning of life) for a given battery state.
@@ -44,7 +44,7 @@ class CellType(ABC):
         """Compute the open-circuit voltage (in V) for a given battery state."""
         pass
 
-    def hystheresis_voltage(self, state: BatteryState) -> float:
+    def hysteresis_voltage(self, state: BatteryState) -> float:
         """Compute the hysteresis voltage (in V) for a given battery state. Default is 0."""
         return 0.0
 
