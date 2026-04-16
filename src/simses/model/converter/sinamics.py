@@ -7,19 +7,38 @@ from simses.interpolation import interp1d_scalar
 
 
 class SinamicsS120:
-    def __init__(self) -> None:
+    """Siemens Sinamics S120 converter loss model from measured efficiency curves.
+
+    Lookup-table model built from a CSV of measured efficiency values for
+    charging (AC→DC) and discharging (DC→AC) at 101 normalised power points.
+    All power arguments are in per-unit of the converter's rated max power.
+
+    The CSV carries separate ``Charging`` and ``Discharging`` curves; in the
+    bundled measurement data they differ by a mean of 0.23% and a maximum of
+    0.40% (the discharging curve is systematically ~0.2 efficiency-points
+    higher).
+
+    Args:
+        use_discharging_curve: If ``True``, use the measured ``Discharging``
+            column for the discharge branch. If ``False`` (default), use the
+            ``Charging`` column for both directions — keeps the model strictly
+            symmetric about zero power. Set to ``True`` to preserve the
+            measured charge/discharge asymmetry.
+    """
+
+    def __init__(self, use_discharging_curve: bool = False) -> None:
         path = os.path.dirname(os.path.abspath(__file__))
         file = os.path.join(path, "data", "sinamics_S120_efficiency.csv")
         df_eff = pd.read_csv(file)  # efficiency curves
 
-        # create lookup tables for input/ouput power conversion
-        # only use charging data for both charging and discharging
+        eff_ch = df_eff["Charging"][::10]  # every 10th row of the 1001-row table
+        eff_dch = df_eff["Discharging"][::10] if use_discharging_curve else eff_ch
+
         input_ch = np.linspace(0, 1, 101)
-        output_ch = input_ch * df_eff["Charging"][::10]  # take every 10 item of the lookup table
+        output_ch = input_ch * eff_ch
 
         input_dch = np.linspace(0, 1, 101)
-        # output_dch = input_dch / df_eff["Discharging"][::10]  # take every 10 item of the lookup table
-        output_dch = input_dch / df_eff["Charging"][::10]  # take every 10 item of the lookup table
+        output_dch = input_dch / eff_dch
 
         self._inp = np.hstack((-input_dch[1:][::-1], 0, input_ch[1:])).tolist()
         self._out = np.hstack((-output_dch[1:][::-1], 0, output_ch[1:])).tolist()
