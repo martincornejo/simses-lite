@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-# TODO: add thermal propoerties
+# TODO: add thermal properties
 
 
 class ConverterLossModel(Protocol):
@@ -74,7 +74,7 @@ class Converter:
         self.storage.step(power_dc, dt)
         power_storage = self.storage.state.power
 
-        # check if subsystem fullfilled DC power
+        # check if subsystem fulfilled DC power
         # if not, re-calculate required AC power
         if power_dc != 0 and (abs(power_dc - power_storage) / abs(power_dc)) > 0.01:  # 1% difference tolerance
             power_dc = power_storage

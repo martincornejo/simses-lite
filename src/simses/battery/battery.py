@@ -170,7 +170,7 @@ class Battery:
 
     def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
         """
-        Calculates the battery current that fullfils the power setpoint.
+        Calculates the battery current that fulfils the power setpoint.
 
         The equilibrium current is calculated based on the equivalent circuit model
         p = i * v

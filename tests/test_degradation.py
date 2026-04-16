@@ -7,7 +7,7 @@ from simses.degradation.cycle_detector import HalfCycle
 from simses.degradation.cyclic import CyclicDegradation
 from simses.degradation.degradation import DegradationModel
 
-# Re-use test helpers from test_battery
+# Reuse test helpers from test_battery
 from tests.test_battery import SimpleCell, _make_battery
 
 
