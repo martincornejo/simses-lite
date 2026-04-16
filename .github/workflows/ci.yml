@@ -27,6 +27,8 @@ jobs:
         run: uv run ruff check . --output-format=github
       - name: Check formatting with ruff
         run: uv run ruff format --check .
+      - name: Spell-check with codespell
+        run: uv run codespell
 
   test:
     runs-on: ubuntu-latest

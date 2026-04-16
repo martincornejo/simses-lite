@@ -23,6 +23,7 @@ notebooks = [
 
 [dependency-groups]
 dev = [
+    "codespell>=2.3",
     "pytest>=9.0.2",
     "ruff>=0.7.4",
 ]
@@ -37,6 +38,12 @@ docs = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.codespell]
+# Skip build artefacts, virtualenvs, caches, lockfiles, and non-text data.
+skip = "./site,./.venv,./.ruff_cache,./.pytest_cache,./build,./dist,./src/simses.egg-info,*.lock,*.csv"
+# Add comma-separated words here if codespell ever false-positives on a valid identifier.
+# ignore-words-list = ""
 
 [tool.ruff]
 # Allow lines to be as long as 120.
