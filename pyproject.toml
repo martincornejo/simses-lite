@@ -42,6 +42,9 @@ where = ["src"]
 # Allow lines to be as long as 120.
 line-length = 120
 
+[tool.ruff.format]
+preview = true  
+
 [tool.ruff.lint]
 select = [
     "A",      # flake8-builtins: Check for Python builtins being used as variables or parameters
