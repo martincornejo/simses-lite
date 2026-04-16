@@ -18,19 +18,21 @@ class SinamicsS120:
     0.40% (the discharging curve is systematically ~0.2 efficiency-points
     higher).
 
-    Args:
-        use_discharging_curve: If ``True``, use the measured ``Discharging``
-            column for the discharge branch. If ``False`` (default), use the
-            ``Charging`` column for both directions — keeps the model strictly
-            symmetric about zero power. Set to ``True`` to preserve the
-            measured charge/discharge asymmetry.
-
     Source: Schimpe et al., "Energy efficiency evaluation of grid
     connection scenarios for stationary battery energy storage systems",
     Energy Procedia 155 (2018) 77–101, doi:10.1016/j.egypro.2018.11.065.
     """
 
     def __init__(self, use_discharging_curve: bool = False) -> None:
+        """
+        Args:
+            use_discharging_curve: If ``True``, use the measured
+                ``Discharging`` column for the discharge branch. If
+                ``False`` (default), use the ``Charging`` column for both
+                directions — keeps the model strictly symmetric about zero
+                power. Set to ``True`` to preserve the measured
+                charge/discharge asymmetry.
+        """
         path = os.path.dirname(os.path.abspath(__file__))
         file = os.path.join(path, "data", "sinamics_S120_efficiency.csv")
         df_eff = pd.read_csv(file)  # efficiency curves

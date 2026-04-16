@@ -31,6 +31,12 @@ class HalfCycleDetector:
     """
 
     def __init__(self, initial_soc: float) -> None:
+        """
+        Args:
+            initial_soc: SOC at the start of the simulation in p.u. The
+                first :meth:`step` call compares against this value to
+                establish the starting direction.
+        """
         self._start_soc: float = initial_soc
         self._prev_soc: float = initial_soc
         self._direction: int = 0  # +1 charging, -1 discharging, 0 unknown

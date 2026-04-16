@@ -6,17 +6,18 @@ class FixedEfficiency:
     discharging), or a ``(charge, discharge)`` tuple for distinct
     efficiencies per direction.
 
-    Args:
-        eff: Either a single efficiency in p.u. (``0 < eff <= 1``), or a
-            ``(charge, discharge)`` tuple of per-direction efficiencies in
-            p.u.
-
     Examples:
         >>> FixedEfficiency(0.95)            # symmetric 95% round-trip factor
         >>> FixedEfficiency((0.96, 0.94))    # 96% charging, 94% discharging
     """
 
     def __init__(self, eff: float | tuple[float, float]) -> None:
+        """
+        Args:
+            eff: Either a single efficiency in p.u. (``0 < eff <= 1``), or
+                a ``(charge, discharge)`` tuple of per-direction
+                efficiencies in p.u.
+        """
         if isinstance(eff, tuple):
             self.eff_charge, self.eff_discharge = eff
         else:

@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-# TODO: add thermal properties
-
 
 class ConverterLossModel(Protocol):
     """Protocol for AC/DC converter loss models.
@@ -22,15 +20,14 @@ class ConverterLossModel(Protocol):
 
 @dataclass
 class ConverterState:
-    """
-    Dataclass representing the state of a converter.
+    """Mutable state of a :class:`Converter`.
 
-    power_setpoint: float
-        Desired power setpoint for the converter in watts (W).
-    power: float
-        Actual power delivered by the converter in watts (W).
-    loss: float
-        Power loss of the converter in watts (W).
+    Attributes:
+        power_setpoint: Requested AC power for the current timestep in W.
+        power: AC power actually delivered this timestep in W
+            (may differ from ``power_setpoint`` after storage-limited
+            recomputation).
+        loss: Conversion loss this timestep in W (``power - power_dc``).
     """
 
     power_setpoint: float = 0.0
@@ -58,6 +55,14 @@ class Converter:
     """
 
     def __init__(self, loss_model: ConverterLossModel, max_power: float, storage) -> None:
+        """
+        Args:
+            loss_model: AC/DC loss model satisfying :class:`ConverterLossModel`.
+            max_power: Rated maximum AC power of the converter in W (the
+                normalisation base for ``loss_model``).
+            storage: Downstream storage exposing ``step(power, dt)`` and
+                ``state.power``. Typically a :class:`Battery`.
+        """
         self.max_power = max_power
         self.state = ConverterState()
         self.model = loss_model
@@ -102,10 +107,36 @@ class Converter:
         self.state.power = power_ac
         self.state.loss = loss
 
-    def dc_to_ac(self, power_dc):
-        max_power = self.max_power
-        return self.model.dc_to_ac(power_dc / max_power) * max_power
+    def ac_to_dc(self, power_ac: float) -> float:
+        """Convert an AC power in W to the corresponding DC power in W.
 
-    def ac_to_dc(self, power_ac):
+        Forward direction used in the normal simulation flow: the AC setpoint
+        is converted to the DC power delivered to the storage.
+
+        Args:
+            power_ac: AC power in W. Positive = charging, negative =
+                discharging.
+
+        Returns:
+            DC power in W, same sign convention as ``power_ac``.
+        """
         max_power = self.max_power
         return self.model.ac_to_dc(power_ac / max_power) * max_power
+
+    def dc_to_ac(self, power_dc: float) -> float:
+        """Convert a DC power in W to the corresponding AC power in W.
+
+        Inverse of :meth:`ac_to_dc`. Used when the storage cannot fulfil
+        the requested DC power — the delivered DC power is back-converted
+        to find the AC power actually exchanged at the converter's AC
+        terminals.
+
+        Args:
+            power_dc: DC power in W. Positive = charging, negative =
+                discharging.
+
+        Returns:
+            AC power in W, same sign convention as ``power_dc``.
+        """
+        max_power = self.max_power
+        return self.model.dc_to_ac(power_dc / max_power) * max_power

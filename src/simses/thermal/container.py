@@ -94,9 +94,16 @@ class ContainerThermalState:
 
 
 class ThermostatMode(enum.Enum):
+    """Operating mode of a :class:`ThermostatStrategy`."""
+
     IDLE = "idle"
+    """Neither heating nor cooling; HVAC draws no power."""
+
     HEATING = "heating"
+    """HVAC is adding heat to the internal air node."""
+
     COOLING = "cooling"
+    """HVAC is removing heat from the internal air node."""
 
 
 class HvacModel(Protocol):
@@ -276,21 +283,17 @@ class ContainerThermalModel:
       - Mid wall layer
       - Outer wall layer
 
-    The outer wall is coupled to a constant ambient temperature.
-    Observable outputs are stored in :attr:`state` after each :meth:`update`.
+    The outer wall is coupled to the ambient temperature (updatable via
+    :attr:`T_ambient`). Observable outputs are stored in :attr:`state`
+    after each :meth:`step`.
 
-    Components are registered via :meth:`add_component` and must provide:
+    Components are registered via :meth:`add_component` and must satisfy
+    the :class:`~simses.thermal.protocol.ThermalComponent` protocol:
 
     * ``state.T``            -- current temperature in K (read/written)
     * ``state.heat``         -- total heat generation in W (read)
     * ``thermal_capacity``   -- thermal capacity in J/K (read)
     * ``thermal_resistance`` -- thermal resistance to internal air in K/W (read)
-
-    Args:
-        properties: Container geometry and wall parameters.
-        T_ambient:  External ambient temperature in K (constant).
-        T_initial:  Initial temperature for all internal nodes in K.
-        hvac:       Optional HVAC strategy; ``None`` means no active HVAC.
     """
 
     _RHO_AIR: float = 1.204  # kg/m³
@@ -304,6 +307,16 @@ class ContainerThermalModel:
         hvac: HvacModel,
         tms: ThermalManagementStrategy,
     ) -> None:
+        """
+        Args:
+            properties: Container geometry and wall-layer parameters.
+            T_ambient: Initial external ambient temperature in K.
+            T_initial: Initial temperature for all internal nodes in K.
+            hvac: HVAC hardware model mapping thermal demand to
+                electrical consumption.
+            tms: Thermal-management strategy producing the thermal-power
+                demand from the reference temperature.
+        """
         self._props = properties
         self.hvac = hvac
         self.tms = tms

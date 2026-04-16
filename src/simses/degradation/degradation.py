@@ -6,6 +6,8 @@ from simses.degradation.state import DegradationState
 
 
 class _NoOpCalendar:
+    """Null :class:`CalendarDegradation` used by :meth:`DegradationModel.cyclic_only`."""
+
     def update_capacity(self, state: BatteryState, dt: float, accumulated_qloss: float) -> float:
         return 0.0
 
@@ -14,6 +16,8 @@ class _NoOpCalendar:
 
 
 class _NoOpCyclic:
+    """Null :class:`CyclicDegradation` used by :meth:`DegradationModel.calendar_only`."""
+
     def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         return 0.0
 
@@ -38,6 +42,16 @@ class DegradationModel:
         initial_soc: float,
         initial_state: DegradationState | None = None,
     ) -> None:
+        """
+        Args:
+            calendar: Calendar aging sub-model.
+            cyclic: Cyclic aging sub-model.
+            initial_soc: SOC at the start of the simulation in p.u. Seeds
+                the :class:`HalfCycleDetector`.
+            initial_state: Optional pre-existing :class:`DegradationState`
+                for warm-starting from a known aging history. ``None``
+                (default) starts from a fresh state.
+        """
         self.calendar = calendar
         self.cyclic = cyclic
         self.cycle_detector = HalfCycleDetector(initial_soc)

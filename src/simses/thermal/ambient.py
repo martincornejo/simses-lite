@@ -34,6 +34,15 @@ class AmbientThermalModel:
     """
 
     def __init__(self, T_ambient: float, components: list | None = None) -> None:
+        """
+        Args:
+            T_ambient: Ambient temperature in K. May be overwritten at any
+                time via the ``T_ambient`` attribute to drive a
+                time-varying profile.
+            components: Initial list of :class:`ThermalComponent` nodes.
+                ``None`` (default) starts with no components — add them
+                via :meth:`add_component`.
+        """
         self.state = AmbientThermalState(T_ambient=T_ambient)
         self._components: list = list(components) if components else []
 
