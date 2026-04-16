@@ -11,6 +11,7 @@ from simses.thermal.container import (
     ThermostatMode,
     ThermostatStrategy,
 )
+from simses.thermal.protocol import ThermalComponent
 from simses.thermal.solar import SolarConfig, solar_heat_load
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "ExternalThermalManagement",
     "HvacModel",
     "SolarConfig",
+    "ThermalComponent",
     "ThermalManagementStrategy",
     "ThermostatMode",
     "ThermostatStrategy",

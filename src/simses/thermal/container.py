@@ -8,6 +8,8 @@ import enum
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from simses.thermal.protocol import ThermalComponent
+
 
 @dataclass(frozen=True)
 class ContainerLayer:
@@ -137,7 +139,7 @@ class ThermalManagementStrategy(Protocol):
 
         Returns:
             ``Q_thermal``: thermal power in W
-              (positive = adds heat, negative = removes heat, 0 = idle).
+                (positive = adds heat, negative = removes heat, 0 = idle).
         """
         ...
 
@@ -185,7 +187,6 @@ class ThermostatStrategy:
     Args:
         T_setpoint: Target internal air temperature in K.
         max_power:  Maximum thermal output requested from the HVAC unit in W.
-        hvac:       HVAC hardware model that converts Q_thermal → P_el.
         threshold:  Half-width of the dead-band in K (default 5.0).
     """
 
@@ -352,11 +353,11 @@ class ContainerThermalModel:
     def Q_solar(self, value: float) -> None:
         self.state.Q_solar = value
 
-    def add_component(self, component) -> None:
+    def add_component(self, component: ThermalComponent) -> None:
         """Register a component as a thermal node.
 
         Args:
-            component: Any object satisfying the duck-typed interface.
+            component: Any object satisfying the :class:`ThermalComponent` protocol.
         """
         self._components.append(component)
 

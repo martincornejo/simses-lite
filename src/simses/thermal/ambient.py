@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from simses.thermal.protocol import ThermalComponent
+
 
 @dataclass
 class AmbientThermalState:
@@ -35,12 +37,11 @@ class AmbientThermalModel:
         self.state = AmbientThermalState(T_ambient=T_ambient)
         self._components: list = list(components) if components else []
 
-    def add_component(self, component) -> None:
+    def add_component(self, component: ThermalComponent) -> None:
         """Register a component as a thermal node.
 
         Args:
-            component: Any object satisfying the duck-typed interface
-                (state.T, state.heat, thermal_capacity, thermal_resistance).
+            component: Any object satisfying the :class:`ThermalComponent` protocol.
         """
         self._components.append(component)
 
