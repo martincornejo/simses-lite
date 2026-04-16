@@ -245,7 +245,6 @@ class Battery:
     @property
     def nominal_voltage(self) -> float:
         """Nominal voltage of the battery system in V."""
-        # TODO: is this required?
         (serial, parallel) = self.circuit
 
         return self.cell.electrical.nominal_voltage * serial
@@ -316,23 +315,15 @@ class Battery:
         """Maximum allowed temperature in K."""
         return self.cell.thermal.max_temperature
 
-    ## cell format
-    @property
-    def volume(self) -> float:
-        """Total volume of all cells in m3."""
-        # TODO: is this required?
-        (serial, parallel) = self.circuit
-
-        return self.cell.format.volume * serial * parallel
-
     @property
     def area(self) -> float:
-        """Effective cooling area of all cells in m2.
+        """Effective cooling area of the pack in m².
 
-        Assumes prismatic cells are stacked so only the top and bottom faces
-        (2 * width * length) exchange heat with the environment.
+        Equals the per-cell surface area (``cell.format.area``) scaled by the
+        ``effective_cooling_area`` fraction and the pack size
+        ``(serial × parallel)``. Used by :attr:`thermal_resistance` to compute
+        the convective coupling between the pack and the thermal environment.
         """
         (serial, parallel) = self.circuit
 
-        # return 2 * self.volume / (self.cell.format.height * 1e-3)  # height mm -> m
         return self.cell.format.area * self.effective_cooling_area * serial * parallel
