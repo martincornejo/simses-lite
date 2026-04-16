@@ -35,8 +35,7 @@ jobs:
         run: uv sync --group docs
 
       - name: Build documentation
-        # TODO: re-add --strict once all docstrings have type annotations
-        run: uv run mkdocs build
+        run: uv run mkdocs build --strict
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'
