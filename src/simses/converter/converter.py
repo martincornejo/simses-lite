@@ -66,12 +66,12 @@ class Converter:
         self.model = loss_model
         self.storage = storage
 
-    def update(self, power_setpoint, dt):
+    def step(self, power_setpoint, dt):
         max_power = self.max_power
         power_ac = max(-max_power, min(power_setpoint, max_power))
         power_dc = self.ac_to_dc(power_ac)
 
-        self.storage.update(power_dc, dt)
+        self.storage.step(power_dc, dt)
         power_storage = self.storage.state.power
 
         # check if subsystem fullfilled DC power

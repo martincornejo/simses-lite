@@ -76,7 +76,7 @@ class TestDegradationModel:
             i_max_discharge=0,
         )
         for _ in range(5):
-            model.update(state, dt=60.0)
+            model.step(state, dt=60.0)
 
         assert cal.call_count == 5
 
@@ -108,14 +108,14 @@ class TestDegradationModel:
 
         # Monotonic charge — no cycle
         state.soc = 0.6
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         state.soc = 0.7
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         assert cyc.call_count == 0
 
         # Reversal
         state.soc = 0.65
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         assert cyc.call_count == 1
 
     def test_soh_q_decreases(self):
@@ -143,7 +143,7 @@ class TestDegradationModel:
             i_max_discharge=0,
         )
         for _ in range(10):
-            model.update(state, dt=60.0)
+            model.step(state, dt=60.0)
 
         assert state.soh_Q < 1.0
 
@@ -172,7 +172,7 @@ class TestDegradationModel:
             i_max_discharge=0,
         )
         for _ in range(10):
-            model.update(state, dt=60.0)
+            model.step(state, dt=60.0)
 
         assert state.soh_R > 1.0
 
@@ -202,9 +202,9 @@ class TestDegradationModel:
         )
         # Force a reversal
         state.soc = 0.6
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         state.soc = 0.55
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         # calendar_only uses _NoOpCyclic, so soh_Q change comes only from calendar
         assert cal.call_count == 2
 
@@ -234,7 +234,7 @@ class TestDegradationModel:
         )
         # No reversal — no cyclic change, no calendar change
         state.soc = 0.6
-        model.update(state, dt=60.0)
+        model.step(state, dt=60.0)
         assert state.soh_Q == 1.0  # no calendar effect
         assert state.soh_R == 1.0
 
@@ -246,7 +246,7 @@ class TestBatteryDegradationIntegration:
     def test_backward_compatible_no_degradation(self):
         """Battery without degradation should work exactly as before."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=100.0, dt=60.0)
+        bat.step(power_setpoint=100.0, dt=60.0)
         assert bat.state.soh_Q == 1.0
         assert bat.state.soh_R == 1.0
 
@@ -265,15 +265,15 @@ class TestBatteryDegradationIntegration:
 
         # Run several charge/discharge cycles
         for _ in range(50):
-            bat.update(power_setpoint=200.0, dt=60.0)
+            bat.step(power_setpoint=200.0, dt=60.0)
         for _ in range(50):
-            bat.update(power_setpoint=-200.0, dt=60.0)
+            bat.step(power_setpoint=-200.0, dt=60.0)
 
         assert bat.state.soh_Q < 1.0
         assert bat.state.soh_R > 1.0
 
     def test_degradation_called_every_timestep(self):
-        """The degradation model's update is called each Battery.update()."""
+        """The degradation model's step is called each Battery.step()."""
         cal = MockCalendar()
         model = DegradationModel.calendar_only(calendar=cal, initial_soc=0.5)
 
@@ -286,6 +286,6 @@ class TestBatteryDegradationIntegration:
 
         n_steps = 10
         for _ in range(n_steps):
-            bat.update(power_setpoint=100.0, dt=60.0)
+            bat.step(power_setpoint=100.0, dt=60.0)
 
         assert cal.call_count == n_steps

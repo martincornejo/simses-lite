@@ -49,7 +49,7 @@ class TestConverterPowerLimiting:
         """Power below max should not be limited."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=500.0, dt=1.0)
+        conv.step(power_setpoint=500.0, dt=1.0)
 
         assert conv.state.power == pytest.approx(500.0, abs=1e-6)
 
@@ -57,7 +57,7 @@ class TestConverterPowerLimiting:
         """Charge power exceeding max should be clamped."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=5000.0, dt=1.0)
+        conv.step(power_setpoint=5000.0, dt=1.0)
 
         assert conv.state.power == pytest.approx(1000.0, abs=1e-6)
 
@@ -65,7 +65,7 @@ class TestConverterPowerLimiting:
         """Discharge power exceeding max should be clamped."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=-5000.0, dt=1.0)
+        conv.step(power_setpoint=-5000.0, dt=1.0)
 
         assert conv.state.power == pytest.approx(-1000.0, abs=1e-6)
 
@@ -79,7 +79,7 @@ class TestConverterStorageInteraction:
         conv = _make_converter(max_power=1000.0)
 
         soc_before = conv.storage.state.soc
-        conv.update(power_setpoint=1000.0, dt=60.0)
+        conv.step(power_setpoint=1000.0, dt=60.0)
 
         assert conv.storage.state.soc > soc_before
 
@@ -88,7 +88,7 @@ class TestConverterStorageInteraction:
         conv = _make_converter(max_power=1000.0)
 
         soc_before = conv.storage.state.soc
-        conv.update(power_setpoint=-1000.0, dt=60.0)
+        conv.step(power_setpoint=-1000.0, dt=60.0)
 
         assert conv.storage.state.soc < soc_before
 
@@ -96,7 +96,7 @@ class TestConverterStorageInteraction:
         """When battery can fulfill power, no re-calculation needed."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=100.0, dt=1.0)
+        conv.step(power_setpoint=100.0, dt=1.0)
 
         # AC power should match setpoint (within limits)
         assert conv.state.power == pytest.approx(100.0, abs=1e-6)
@@ -105,7 +105,7 @@ class TestConverterStorageInteraction:
         """At high SOC, battery may not accept full charge power."""
         conv = _make_converter(max_power=1000.0, soc=0.99, soc_limits=(0.0, 1.0))
 
-        conv.update(power_setpoint=5000.0, dt=10.0)
+        conv.step(power_setpoint=5000.0, dt=10.0)
 
         # Converter should recalculate based on what battery actually accepted
         # Power should be less than setpoint
@@ -115,7 +115,7 @@ class TestConverterStorageInteraction:
         """At low SOC, battery may not provide full discharge power."""
         conv = _make_converter(max_power=1000.0, soc=0.01, soc_limits=(0.0, 1.0))
 
-        conv.update(power_setpoint=-5000.0, dt=10.0)
+        conv.step(power_setpoint=-5000.0, dt=10.0)
 
         # Converter should recalculate based on what battery actually delivered
         # Power magnitude should be less than setpoint magnitude
@@ -126,7 +126,7 @@ class TestConverterStorageInteraction:
         conv = _make_converter(max_power=1000.0)
 
         soc_before = conv.storage.state.soc
-        conv.update(power_setpoint=0.0, dt=60.0)
+        conv.step(power_setpoint=0.0, dt=60.0)
 
         assert conv.storage.state.soc == soc_before
         assert conv.storage.state.power == 0.0
@@ -138,12 +138,12 @@ class TestConverterStorageInteraction:
         conv = _make_converter(max_power=1000.0)
 
         # First update
-        conv.update(power_setpoint=50.0, dt=1.0)
+        conv.step(power_setpoint=50.0, dt=1.0)
         assert conv.state.power_setpoint == 50.0
         assert conv.state.power == pytest.approx(50.0, abs=1e-6)
 
         # Second update
-        conv.update(power_setpoint=-100.0, dt=1.0)
+        conv.step(power_setpoint=-100.0, dt=1.0)
         assert conv.state.power_setpoint == -100.0
         assert conv.state.power == pytest.approx(-100.0, abs=1e-6)
 
@@ -157,7 +157,7 @@ class TestConverterLoss:
         conv = _make_converter(max_power=1000.0)
 
         power_ac = 1000.0
-        conv.update(power_setpoint=power_ac, dt=1.0)
+        conv.step(power_setpoint=power_ac, dt=1.0)
 
         # Loss = AC - DC, should be positive for charging
         loss = conv.state.loss
@@ -171,7 +171,7 @@ class TestConverterLoss:
         conv = _make_converter(max_power=1000.0)
 
         power_ac = -1000.0
-        conv.update(power_setpoint=power_ac, dt=1.0)
+        conv.step(power_setpoint=power_ac, dt=1.0)
 
         # Loss = AC - DC = (-1000) - (-1053) = +53 W (heat dissipated)
         # Loss is always positive, representing energy lost as heat
@@ -186,8 +186,8 @@ class TestConverterLoss:
         conv1 = _make_converter(max_power=1000.0)
         conv2 = _make_converter(max_power=1000.0)
 
-        conv1.update(power_setpoint=500.0, dt=1.0)
-        conv2.update(power_setpoint=1000.0, dt=1.0)
+        conv1.step(power_setpoint=500.0, dt=1.0)
+        conv2.step(power_setpoint=1000.0, dt=1.0)
 
         assert abs(conv2.state.loss) > abs(conv1.state.loss)
 
@@ -200,7 +200,7 @@ class TestConverterEdgeCases:
         """Very small power should be handled correctly."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=0.001, dt=1.0)
+        conv.step(power_setpoint=0.001, dt=1.0)
 
         assert conv.state.power == pytest.approx(0.001, rel=1e-2)
 
@@ -208,6 +208,6 @@ class TestConverterEdgeCases:
         """Requesting exactly max power should work."""
         conv = _make_converter(max_power=1000.0)
 
-        conv.update(power_setpoint=1000.0, dt=1.0)
+        conv.step(power_setpoint=1000.0, dt=1.0)
 
         assert conv.state.power == pytest.approx(1000.0)

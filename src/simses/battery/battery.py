@@ -87,7 +87,7 @@ class Battery:
         state.entropy = self.entropic_coefficient(state)
         return state
 
-    def update(self, power_setpoint: float, dt: float) -> None:
+    def step(self, power_setpoint: float, dt: float) -> None:
         """
         Update the battery state based on a power setpoint and timestep.
         If the battery cannot fulfill the power setpoint due to technical limits, it will curtail the current and update the state accordingly.
@@ -166,7 +166,7 @@ class Battery:
         state.i_max_discharge = i_max_discharge
 
         if self.degradation is not None:
-            self.degradation.update(self.state, dt)  # updates state.soh_Q and state.soh_R
+            self.degradation.step(self.state, dt)  # updates state.soh_Q and state.soh_R
 
     def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
         """

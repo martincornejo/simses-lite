@@ -40,7 +40,7 @@ class HalfCycleDetector:
         self.total_fec: float = 0.0
         self.last_cycle: HalfCycle | None = None
 
-    def update(self, soc: float, dt: float) -> bool:
+    def step(self, soc: float, dt: float) -> bool:
         """Update the detector with a new SOC value.
 
         Args:

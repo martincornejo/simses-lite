@@ -33,7 +33,7 @@ battery = Battery(cell=SonyLFP(), serial=13, parallel=1)
 
 dt = 60  # seconds
 for power in np.full(100, -5000):  # 5 kW discharge for 100 minutes
-    battery.update(power, dt)
+    battery.step(power, dt)
 
 print(f"Final SOC: {battery.state.soc:.2%}")
 ```

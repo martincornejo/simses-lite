@@ -63,7 +63,7 @@ class DegradationModel:
         """Create a model with only cyclic aging (no calendar component)."""
         return cls(calendar=_NoOpCalendar(), cyclic=cyclic, initial_soc=initial_soc, initial_state=initial_state)
 
-    def update(self, state: BatteryState, dt: float) -> None:
+    def step(self, state: BatteryState, dt: float) -> None:
         """Run one degradation timestep.
 
         1. Calendar aging is applied every timestep.
@@ -79,7 +79,7 @@ class DegradationModel:
         state.soh_R += dr_cal
 
         # Cycle detection + cyclic aging
-        if self.cycle_detector.update(state.soc, dt):
+        if self.cycle_detector.step(state.soc, dt):
             half_cycle = self.cycle_detector.last_cycle
             dq_cyc = self.cyclic.update_capacity(state, half_cycle, self.state.qloss_cyc)
             dr_cyc = self.cyclic.update_resistance(state, half_cycle)

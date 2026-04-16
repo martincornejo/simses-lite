@@ -21,9 +21,9 @@ V_terminal = OCV(SOC, T) - I × Rint(SOC, T)
     System voltage = cell voltage × `serial`  
     System capacity = cell capacity × `parallel`
 
-## Update Cycle
+## Step Cycle
 
-Each call to `battery.update(power, dt)`:
+Each call to `battery.step(power, dt)`:
 
 1. Computes equilibrium current from power setpoint via the ECM quadratic formula
 2. Applies hard current limits (C-rate, voltage, SOC)

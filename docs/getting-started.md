@@ -37,7 +37,7 @@ charge_profile = np.full(60, 5000.0)   # positive = charging
 discharge_profile = np.full(60, -5000.0)
 
 for power in np.concatenate([charge_profile, discharge_profile]):
-    battery.update(power, dt)
+    battery.step(power, dt)
 
 print(f"SOC:     {battery.state.soc:.2%}")
 print(f"Voltage: {battery.state.voltage:.1f} V")

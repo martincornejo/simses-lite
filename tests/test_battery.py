@@ -312,65 +312,65 @@ class TestCalculateMaxCurrents:
 class TestBatteryUpdate:
     def test_soc_increases_on_charge(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=100.0, dt=60.0)
+        bat.step(power_setpoint=100.0, dt=60.0)
         assert bat.state.soc > 0.5
 
     def test_soc_decreases_on_discharge(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=-100.0, dt=60.0)
+        bat.step(power_setpoint=-100.0, dt=60.0)
         assert bat.state.soc < 0.5
 
     def test_soc_clamped_at_max(self):
         bat = _make_battery(soc=0.999, soc_limits=(0.0, 1.0))
-        bat.update(power_setpoint=1e6, dt=3600.0)
+        bat.step(power_setpoint=1e6, dt=3600.0)
         assert bat.state.soc <= 1.0
 
     def test_soc_clamped_at_min(self):
         bat = _make_battery(soc=0.001, soc_limits=(0.0, 1.0))
-        bat.update(power_setpoint=-500.0, dt=3600.0)
+        bat.step(power_setpoint=-500.0, dt=3600.0)
         assert bat.state.soc >= 0.0
 
     def test_voltage_within_limits_charge(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=1e6, dt=60.0)
+        bat.step(power_setpoint=1e6, dt=60.0)
         assert bat.state.v <= bat.max_voltage + 1e-6
 
     def test_voltage_within_limits_discharge(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=-2000.0, dt=60.0)
+        bat.step(power_setpoint=-2000.0, dt=60.0)
         assert bat.state.v >= bat.min_voltage - 1e-6
 
     def test_rest_preserves_is_charge(self):
         bat = _make_battery(soc=0.5)
         bat.state.is_charge = False
-        bat.update(power_setpoint=0.0, dt=60.0)
+        bat.step(power_setpoint=0.0, dt=60.0)
         # is_charge should stay False when at rest
         assert bat.state.is_charge is False
 
     def test_loss_is_positive(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=200.0, dt=60.0)
+        bat.step(power_setpoint=200.0, dt=60.0)
         assert bat.state.loss >= 0.0
 
     def test_loss_is_positive_on_discharge(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=-200.0, dt=60.0)
+        bat.step(power_setpoint=-200.0, dt=60.0)
         assert bat.state.loss >= 0.0
 
     def test_heat_set_after_update(self):
         """heat field is populated (non-zero when current flows)."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=200.0, dt=60.0)
+        bat.step(power_setpoint=200.0, dt=60.0)
         assert bat.state.heat != 0.0
 
     def test_power_setpoint_stored(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=123.0, dt=60.0)
+        bat.step(power_setpoint=123.0, dt=60.0)
         assert bat.state.power_setpoint == 123.0
 
     def test_zero_power_no_soc_change(self):
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=0.0, dt=60.0)
+        bat.step(power_setpoint=0.0, dt=60.0)
         assert bat.state.soc == 0.5
         assert bat.state.i == 0.0
 
@@ -378,7 +378,7 @@ class TestBatteryUpdate:
         bat = _make_battery(soc=0.1)
         socs = [bat.state.soc]
         for _ in range(10):
-            bat.update(power_setpoint=50.0, dt=60.0)
+            bat.step(power_setpoint=50.0, dt=60.0)
             socs.append(bat.state.soc)
         assert all(s2 >= s1 for s1, s2 in zip(socs, socs[1:], strict=False))
 
@@ -390,58 +390,58 @@ class TestMaxCurrentTracking:
     def test_i_max_charge_positive_at_mid_soc(self):
         """After update, i_max_charge should be positive (charging is possible)."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=100.0, dt=1.0)
+        bat.step(power_setpoint=100.0, dt=1.0)
         assert bat.state.i_max_charge > 0
 
     def test_i_max_discharge_negative_at_mid_soc(self):
         """After update, i_max_discharge should be negative (discharging is possible)."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=-100.0, dt=1.0)
+        bat.step(power_setpoint=-100.0, dt=1.0)
         assert bat.state.i_max_discharge < 0
 
     @pytest.mark.parametrize("power_setpoint", [-500.0, -100.0, 0.0, 100.0, 500.0])
     def test_current_within_reported_limits(self, power_setpoint):
         """After update, actual current is always between i_max_discharge and i_max_charge."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=power_setpoint, dt=60.0)
+        bat.step(power_setpoint=power_setpoint, dt=60.0)
         assert bat.state.i >= bat.state.i_max_discharge - 1e-9
         assert bat.state.i <= bat.state.i_max_charge + 1e-9
 
     def test_i_max_charge_equals_c_rate_at_mid_soc(self):
         """At mid SOC with short dt, C-rate is the binding charge limit."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=100.0, dt=1.0)
+        bat.step(power_setpoint=100.0, dt=1.0)
         assert bat.state.i_max_charge == pytest.approx(bat.max_charge_current)
 
     def test_i_max_discharge_equals_c_rate_at_mid_soc(self):
         """At mid SOC with short dt, C-rate is the binding discharge limit."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=-100.0, dt=1.0)
+        bat.step(power_setpoint=-100.0, dt=1.0)
         assert bat.state.i_max_discharge == pytest.approx(-bat.max_discharge_current)
 
     def test_i_max_charge_zero_at_soc_max(self):
         """At SOC=1.0, no more charging is possible."""
         bat = _make_battery(soc=1.0)
-        bat.update(power_setpoint=100.0, dt=1.0)
+        bat.step(power_setpoint=100.0, dt=1.0)
         assert bat.state.i_max_charge <= 1e-9
 
     def test_i_max_discharge_zero_at_soc_min(self):
         """At SOC=0.0, no more discharging is possible."""
         bat = _make_battery(soc=0.0)
-        bat.update(power_setpoint=-100.0, dt=1.0)
+        bat.step(power_setpoint=-100.0, dt=1.0)
         assert bat.state.i_max_discharge >= -1e-9
 
     def test_i_max_reflects_hard_limit_not_operating_current(self):
         """i_max_charge should reflect the hard limit, not the actual operating current."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=10.0, dt=1.0)  # small power -> small current
+        bat.step(power_setpoint=10.0, dt=1.0)  # small power -> small current
         assert bat.state.i_max_charge == pytest.approx(bat.max_charge_current)
         assert 0 < bat.state.i < bat.state.i_max_charge  # operating well below limit
 
     def test_i_max_computed_at_rest(self):
         """Even at zero power, the theoretical max currents are computed."""
         bat = _make_battery(soc=0.5)
-        bat.update(power_setpoint=0.0, dt=1.0)
+        bat.step(power_setpoint=0.0, dt=1.0)
         assert bat.state.i_max_charge > 0
         assert bat.state.i_max_discharge < 0
 
@@ -449,7 +449,7 @@ class TestMaxCurrentTracking:
         """SOC limits constrain i_max when near the boundary."""
         bat = _make_battery(soc=0.89, soc_limits=(0.1, 0.9))
         dt = 1.0
-        bat.update(power_setpoint=100.0, dt=dt)
+        bat.step(power_setpoint=100.0, dt=dt)
         # SOC limit for charge: (0.9 - 0.89) * Q / (dt/3600)
         soc_limit = (0.9 - 0.89) * bat.capacity(bat.state) / (dt / 3600)
         assert bat.state.i_max_charge <= soc_limit + 1e-6
@@ -484,9 +484,9 @@ class TestVoltageDerating:
     def test_no_derating_same_as_baseline(self):
         """Without derating configured, behaviour is identical to a plain battery."""
         bat = _make_battery(soc=0.9)
-        bat.update(power_setpoint=1e4, dt=60.0)
+        bat.step(power_setpoint=1e4, dt=60.0)
         bat_no = _make_battery(soc=0.9)
-        bat_no.update(power_setpoint=1e4, dt=60.0)
+        bat_no.step(power_setpoint=1e4, dt=60.0)
         assert bat.state.i == pytest.approx(bat_no.state.i)
         assert bat.state.v == pytest.approx(bat_no.state.v)
 
@@ -497,10 +497,10 @@ class TestVoltageDerating:
         p = 1e4
 
         bat_no = _make_battery(soc=0.9)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.9, charge_derate=4.0)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.i <= bat_no.state.i + 1e-12
         assert bat_dr.state.i >= 0  # still charging or zero
@@ -508,7 +508,7 @@ class TestVoltageDerating:
     def test_charge_derate_voltage_stays_below_max(self):
         """After update with derating, terminal voltage should not exceed max."""
         bat = self._make_derate_battery(soc=0.95, charge_derate=4.0)
-        bat.update(power_setpoint=1e6, dt=60.0)
+        bat.step(power_setpoint=1e6, dt=60.0)
         assert bat.state.v <= bat.max_voltage + 1e-6
 
     def test_charge_derate_no_effect_at_low_soc(self):
@@ -517,10 +517,10 @@ class TestVoltageDerating:
         p = 100.0
 
         bat_no = _make_battery(soc=0.3)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.3, charge_derate=4.0)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.i == pytest.approx(bat_no.state.i, rel=1e-9)
         assert bat_dr.state.soc == pytest.approx(bat_no.state.soc, rel=1e-9)
@@ -531,10 +531,10 @@ class TestVoltageDerating:
         p = 1e4
 
         bat_no = _make_battery(soc=0.9)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.9, charge_derate=4.0)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.soc <= bat_no.state.soc + 1e-12
 
@@ -544,10 +544,10 @@ class TestVoltageDerating:
         p = 1e4
 
         bat_no = _make_battery(soc=0.9)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.9, charge_derate=4.0)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.power <= bat_no.state.power + 1e-6
 
@@ -558,10 +558,10 @@ class TestVoltageDerating:
         p = -2000.0
 
         bat_no = _make_battery(soc=0.1)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.1, discharge_derate=3.2)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         # discharge current is negative; derated should be less negative (closer to 0)
         assert bat_dr.state.i >= bat_no.state.i - 1e-12
@@ -570,7 +570,7 @@ class TestVoltageDerating:
     def test_discharge_derate_voltage_stays_above_min(self):
         """After update with derating, terminal voltage should not drop below min."""
         bat = self._make_derate_battery(soc=0.05, discharge_derate=3.2)
-        bat.update(power_setpoint=-2000.0, dt=60.0)
+        bat.step(power_setpoint=-2000.0, dt=60.0)
         assert bat.state.v >= bat.min_voltage - 1e-6
 
     def test_discharge_derate_no_effect_at_high_soc(self):
@@ -579,10 +579,10 @@ class TestVoltageDerating:
         p = -100.0
 
         bat_no = _make_battery(soc=0.7)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.7, discharge_derate=3.2)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.i == pytest.approx(bat_no.state.i, rel=1e-9)
         assert bat_dr.state.soc == pytest.approx(bat_no.state.soc, rel=1e-9)
@@ -593,17 +593,17 @@ class TestVoltageDerating:
         p = -2000.0
 
         bat_no = _make_battery(soc=0.1)
-        bat_no.update(power_setpoint=p, dt=dt)
+        bat_no.step(power_setpoint=p, dt=dt)
 
         bat_dr = self._make_derate_battery(soc=0.1, discharge_derate=3.2)
-        bat_dr.update(power_setpoint=p, dt=dt)
+        bat_dr.step(power_setpoint=p, dt=dt)
 
         assert bat_dr.state.soc >= bat_no.state.soc - 1e-12
 
     # --- zero power ---
     def test_zero_power_unaffected_by_derating(self):
         bat = self._make_derate_battery(soc=0.5, charge_derate=4.0, discharge_derate=3.2)
-        bat.update(power_setpoint=0.0, dt=60.0)
+        bat.step(power_setpoint=0.0, dt=60.0)
         assert bat.state.i == 0.0
         assert bat.state.soc == 0.5
 
@@ -611,40 +611,40 @@ class TestVoltageDerating:
     def test_charge_derate_i_max_matches_hard_limit_below_zone(self):
         """When below the derating zone, i_max_charge equals the hard limit."""
         bat_no = _make_battery(soc=0.3)
-        bat_no.update(power_setpoint=100.0, dt=1.0)
+        bat_no.step(power_setpoint=100.0, dt=1.0)
 
         bat_dr = self._make_derate_battery(soc=0.3, charge_derate=4.0)
-        bat_dr.update(power_setpoint=100.0, dt=1.0)
+        bat_dr.step(power_setpoint=100.0, dt=1.0)
 
         assert bat_dr.state.i_max_charge == pytest.approx(bat_no.state.i_max_charge, rel=1e-9)
 
     def test_charge_derate_reduces_i_max_in_state(self):
         """When derating is active at high SOC, i_max_charge is reduced vs hard limit."""
         bat_no = _make_battery(soc=0.9)
-        bat_no.update(power_setpoint=1e4, dt=60.0)
+        bat_no.step(power_setpoint=1e4, dt=60.0)
 
         bat_dr = self._make_derate_battery(soc=0.9, charge_derate=4.0)
-        bat_dr.update(power_setpoint=1e4, dt=60.0)
+        bat_dr.step(power_setpoint=1e4, dt=60.0)
 
         assert bat_dr.state.i_max_charge <= bat_no.state.i_max_charge + 1e-12
 
     def test_discharge_derate_i_max_matches_hard_limit_above_zone(self):
         """When above the derating zone, i_max_discharge equals the hard limit."""
         bat_no = _make_battery(soc=0.7)
-        bat_no.update(power_setpoint=-100.0, dt=1.0)
+        bat_no.step(power_setpoint=-100.0, dt=1.0)
 
         bat_dr = self._make_derate_battery(soc=0.7, discharge_derate=3.2)
-        bat_dr.update(power_setpoint=-100.0, dt=1.0)
+        bat_dr.step(power_setpoint=-100.0, dt=1.0)
 
         assert bat_dr.state.i_max_discharge == pytest.approx(bat_no.state.i_max_discharge, rel=1e-9)
 
     def test_discharge_derate_reduces_i_max_in_state(self):
         """When derating is active at low SOC, i_max_discharge magnitude is reduced."""
         bat_no = _make_battery(soc=0.1)
-        bat_no.update(power_setpoint=-2000.0, dt=60.0)
+        bat_no.step(power_setpoint=-2000.0, dt=60.0)
 
         bat_dr = self._make_derate_battery(soc=0.1, discharge_derate=3.2)
-        bat_dr.update(power_setpoint=-2000.0, dt=60.0)
+        bat_dr.step(power_setpoint=-2000.0, dt=60.0)
 
         # derated should be less negative (closer to zero)
         assert bat_dr.state.i_max_discharge >= bat_no.state.i_max_discharge - 1e-12
@@ -653,7 +653,7 @@ class TestVoltageDerating:
     def test_current_within_reported_limits_with_derating(self, power_setpoint):
         """With derating configured, actual current stays within reported limits."""
         bat = self._make_derate_battery(soc=0.5, charge_derate=4.0, discharge_derate=3.2)
-        bat.update(power_setpoint=power_setpoint, dt=60.0)
+        bat.step(power_setpoint=power_setpoint, dt=60.0)
         assert bat.state.i >= bat.state.i_max_discharge - 1e-9
         assert bat.state.i <= bat.state.i_max_charge + 1e-9
 
@@ -676,37 +676,37 @@ class TestThermalDerating:
     def test_no_derating_below_T_start(self):
         T = 310.0
         bat_no = _make_battery(soc=0.5, T=T)
-        bat_no.update(power_setpoint=100.0, dt=60.0)
+        bat_no.step(power_setpoint=100.0, dt=60.0)
         bat_dr = self._make(T=T)
-        bat_dr.update(power_setpoint=100.0, dt=60.0)
+        bat_dr.step(power_setpoint=100.0, dt=60.0)
         assert bat_dr.state.i == pytest.approx(bat_no.state.i, rel=1e-9)
 
     def test_derating_reduces_current_in_zone(self):
         T = 325.0  # between T_START and T_MAX
         bat_no = _make_battery(soc=0.5, T=T)
-        bat_no.update(power_setpoint=100.0, dt=60.0)
+        bat_no.step(power_setpoint=100.0, dt=60.0)
         bat_dr = self._make(T=T)
-        bat_dr.update(power_setpoint=100.0, dt=60.0)
+        bat_dr.step(power_setpoint=100.0, dt=60.0)
         assert bat_dr.state.i < bat_no.state.i
         assert bat_dr.state.i >= 0
 
     def test_current_zero_at_T_max(self):
         bat = self._make(T=self.T_MAX)
-        bat.update(power_setpoint=100.0, dt=60.0)
+        bat.step(power_setpoint=100.0, dt=60.0)
         assert bat.state.i == pytest.approx(0.0, abs=1e-9)
 
     def test_zero_power_unaffected(self):
         bat = self._make(T=325.0)
-        bat.update(power_setpoint=0.0, dt=60.0)
+        bat.step(power_setpoint=0.0, dt=60.0)
         assert bat.state.i == 0.0
 
     def test_discharge_uses_same_thresholds_by_default(self):
         """Discharge derating mirrors charge derating when not configured separately."""
         T = 325.0
         bat_no = _make_battery(soc=0.5, T=T)
-        bat_no.update(power_setpoint=-100.0, dt=60.0)
+        bat_no.step(power_setpoint=-100.0, dt=60.0)
         bat_dr = self._make(T=T)
-        bat_dr.update(power_setpoint=-100.0, dt=60.0)
+        bat_dr.step(power_setpoint=-100.0, dt=60.0)
         # derated discharge current is less negative (closer to 0)
         assert bat_dr.state.i > bat_no.state.i
         assert bat_dr.state.i <= 0
@@ -724,8 +724,8 @@ class TestDeratingChain:
             derating=DeratingChain([]),
         )
         bat_none = _make_battery(soc=0.5)
-        bat_chain.update(power_setpoint=100.0, dt=60.0)
-        bat_none.update(power_setpoint=100.0, dt=60.0)
+        bat_chain.step(power_setpoint=100.0, dt=60.0)
+        bat_none.step(power_setpoint=100.0, dt=60.0)
         assert bat_chain.state.i == pytest.approx(bat_none.state.i, rel=1e-9)
 
     def test_chain_thermal_reduces_current(self):
@@ -747,8 +747,8 @@ class TestDeratingChain:
             derating=derating,
         )
         bat_none = _make_battery(soc=0.5, T=T)
-        bat_chain.update(power_setpoint=100.0, dt=60.0)
-        bat_none.update(power_setpoint=100.0, dt=60.0)
+        bat_chain.step(power_setpoint=100.0, dt=60.0)
+        bat_none.step(power_setpoint=100.0, dt=60.0)
         assert bat_chain.state.i <= bat_none.state.i + 1e-9
 
     def test_chain_is_itself_a_valid_derating(self):
@@ -762,7 +762,7 @@ class TestDeratingChain:
             initial_states={"start_soc": 0.5, "start_T": 325.0},
             derating=outer,
         )
-        bat.update(power_setpoint=100.0, dt=60.0)
+        bat.step(power_setpoint=100.0, dt=60.0)
         assert bat.state.i >= 0
 
 
@@ -824,8 +824,8 @@ class TestDefaultDegradationModel:
         )
         dt = 3600.0  # 1 hour steps
         for _ in range(500):
-            bat.update(power_setpoint=5.0, dt=dt)
-            bat.update(power_setpoint=-5.0, dt=dt)
+            bat.step(power_setpoint=5.0, dt=dt)
+            bat.step(power_setpoint=-5.0, dt=dt)
         assert bat.state.soh_Q < 1.0
 
     def test_simple_cell_degradation_true_raises(self):

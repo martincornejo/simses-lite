@@ -254,7 +254,7 @@ class ExternalThermalManagement:
 
         # In the simulation loop:
         tms.Q_hvac = mpc_computed_power
-        container.update(dt=1.0)
+        container.step(dt=1.0)
     """
 
     def __init__(self) -> None:
@@ -360,7 +360,7 @@ class ContainerThermalModel:
         """
         self._components.append(component)
 
-    def update(self, dt: float) -> None:
+    def step(self, dt: float) -> None:
         """Advance all thermal nodes by one timestep.
 
         Args:

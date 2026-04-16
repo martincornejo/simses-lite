@@ -8,7 +8,7 @@ before forwarding power to a storage system (e.g., `Battery`).
 [PLACEHOLDER: Explain the AC/DC boundary — what power is set at AC side, what reaches battery]
 
 ```
-AC setpoint → loss model → DC power → Battery.update()
+AC setpoint → loss model → DC power → Battery.step()
 ```
 
 ## Loss Models
@@ -32,7 +32,7 @@ Same as battery: positive = charging (power flows into storage), negative = disc
 
 ## Composability
 
-`Converter` wraps any storage object with an `update(power, dt)` method — it is
+`Converter` wraps any storage object with a `step(power, dt)` method — it is
 not tied to `Battery` specifically.
 
 [PLACEHOLDER: Show a short code snippet composing Converter with Battery]

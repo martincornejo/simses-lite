@@ -44,7 +44,7 @@ class AmbientThermalModel:
         """
         self._components.append(component)
 
-    def update(self, dt: float) -> None:
+    def step(self, dt: float) -> None:
         """Advance every registered component's temperature by one timestep.
 
         Args:
