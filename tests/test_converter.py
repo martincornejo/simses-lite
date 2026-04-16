@@ -9,10 +9,10 @@ from simses.model.converter.fix_efficiency import FixedEfficiency
 from tests.test_battery import _make_battery
 
 
-def _make_converter(max_power, effc=0.95, effd=None, circuit=(10, 1), soc=0.5, **battery_kw):
+def _make_converter(max_power, eff=0.95, circuit=(10, 1), soc=0.5, **battery_kw):
     """Helper to create a Converter with FixedEfficiency and SimpleCell battery."""
     battery = _make_battery(circuit=circuit, soc=soc, **battery_kw)
-    model = FixedEfficiency(effc=effc, effd=effd)
+    model = FixedEfficiency(eff)
     return Converter(loss_model=model, max_power=max_power, storage=battery)
 
 

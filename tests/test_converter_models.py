@@ -28,11 +28,11 @@ class ConverterModelSpec:
 CONVERTER_SPECS: list[ConverterModelSpec] = [
     ConverterModelSpec(
         name="FixedEfficiency_95",
-        factory=lambda: FixedEfficiency(effc=0.95),
+        factory=lambda: FixedEfficiency(0.95),
     ),
     ConverterModelSpec(
         name="FixedEfficiency_Asymmetric",
-        factory=lambda: FixedEfficiency(effc=0.96, effd=0.94),
+        factory=lambda: FixedEfficiency((0.96, 0.94)),
     ),
     ConverterModelSpec(
         name="SinamicsS120",
