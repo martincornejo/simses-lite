@@ -13,10 +13,22 @@ from simses.model.degradation.sony_lfp_cyclic import SonyLFPCyclicDegradation
 
 
 class SonyLFP(CellType):
-    """
-    Source SONY_US26650FTC1_Product Specification and Naumann, Maik. Techno-economic evaluation of stationary
-    lithium_ion energy storage systems with special consideration of aging.
-    PhD Thesis. Technical University Munich, 2018.
+    """Sony / Murata US26650FTC1 cylindrical LFP cell.
+
+    Lithium iron phosphate cell with 3 Ah nominal capacity and 3.2 V
+    nominal voltage. OCV, hysteresis voltage, and entropic coefficient
+    are 1-D lookups in SOC; internal resistance is a 2-D lookup in
+    ``(SOC, T)`` with separate charge and discharge tables. Ships a
+    default degradation model
+    (:class:`~simses.model.degradation.sony_lfp_calendar.SonyLFPCalendarDegradation`
+    + :class:`~simses.model.degradation.sony_lfp_cyclic.SonyLFPCyclicDegradation`)
+    that :class:`~simses.battery.battery.Battery` picks up when
+    constructed with ``degradation=True``.
+
+    Sources: SONY_US26650FTC1 Product Specification; and Naumann, Maik.
+    *Techno-economic evaluation of stationary lithium-ion energy storage
+    systems with special consideration of aging*. PhD Thesis, Technical
+    University Munich, 2018.
     """
 
     def __init__(self):

@@ -62,6 +62,27 @@ class LinearVoltageDerating:
         )
 
     def derate(self, i: float, state: BatteryState) -> float:
+        """Return the current scaled down if the derating zone is active.
+
+        The terminal voltage is computed from the incoming current and the
+        state's OCV / hysteresis / Rint, then:
+
+        * Charge (``i > 0``): full current below ``charge_start_voltage``,
+          zero at ``max_voltage``, linear in between.
+        * Discharge (``i < 0``): full current above
+          ``discharge_start_voltage``, zero at ``min_voltage``, linear in
+          between.
+
+        If the corresponding start voltage is ``None``, no derating is
+        applied for that direction.
+
+        Args:
+            i: Candidate current in A (already clamped to hard limits).
+            state: Current battery state.
+
+        Returns:
+            Derated current in A (same sign as ``i``, magnitude ≤ ``|i|``).
+        """
         if i == 0.0:
             return i
 
@@ -107,6 +128,19 @@ class LinearThermalDerating:
         self.discharge_T_max = discharge_T_max if discharge_T_max is not None else charge_T_max
 
     def derate(self, i: float, state: BatteryState) -> float:
+        """Return the current scaled down if the temperature derating zone is active.
+
+        Below the start temperature no derating is applied; between start
+        and max the current is scaled linearly from 100% down to 0%; at or
+        above the max temperature the current is forced to 0.
+
+        Args:
+            i: Candidate current in A (already clamped to hard limits).
+            state: Current battery state (reads ``T``).
+
+        Returns:
+            Derated current in A (same sign as ``i``, magnitude ≤ ``|i|``).
+        """
         if i == 0.0:
             return i
 
@@ -141,6 +175,15 @@ class DeratingChain:
         self._strategies = list(strategies)
 
     def derate(self, i: float, state: BatteryState) -> float:
+        """Apply each strategy in sequence, short-circuiting at zero.
+
+        Args:
+            i: Candidate current in A.
+            state: Current battery state.
+
+        Returns:
+            Current after all strategies have been applied in order.
+        """
         for strategy in self._strategies:
             i = strategy.derate(i, state)
             if i == 0.0:

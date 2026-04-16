@@ -7,7 +7,25 @@ from simses.degradation.degradation import DegradationModel
 
 
 class Battery:
-    """Battery system composed of cells in a series-parallel circuit."""
+    """Battery system composed of cells in a series-parallel circuit.
+
+    Models a pack of identical cells arranged as ``(serial, parallel)`` using
+    an equivalent-circuit model (ECM): terminal voltage is
+    ``OCV(SOC,T) + hysteresis + Rint × I``. Each call to :meth:`step` solves
+    the equilibrium current for a requested power setpoint, clamps it to the
+    hard limits (C-rate, voltage window, SOC window), optionally applies a
+    :class:`~simses.battery.derating.CurrentDerating` strategy, and updates
+    the state.
+
+    Composition: a :class:`~simses.battery.cell.CellType` supplies the
+    electrochemistry and per-cell physical properties; an optional
+    :class:`~simses.degradation.degradation.DegradationModel` accumulates
+    capacity fade and resistance rise; an optional ``CurrentDerating``
+    reduces current in voltage or temperature derating zones.
+
+    Sign convention: positive power / current = charging, negative =
+    discharging.
+    """
 
     def __init__(
         self,
@@ -61,7 +79,22 @@ class Battery:
     def initialize_state(
         self, start_soc: float, start_T: float, start_soh_Q: float = 1.0, start_soh_R: float = 1.0
     ) -> BatteryState:
-        """Create the initial battery state from starting conditions."""
+        """Create the initial battery state from starting conditions.
+
+        Sets SOC, temperature, and SoH from the arguments, then evaluates
+        OCV, hysteresis, Rint, and entropic coefficient at that initial
+        state so the returned object is consistent before the first
+        :meth:`step` call.
+
+        Args:
+            start_soc: Initial state of charge in p.u.
+            start_T: Initial cell temperature in K.
+            start_soh_Q: Initial capacity SoH in p.u. (default 1.0 = fresh).
+            start_soh_R: Initial resistance SoH in p.u. (default 1.0 = fresh).
+
+        Returns:
+            A fully-initialised :class:`BatteryState`.
+        """
         state = BatteryState(
             v=0,  # uninitialized
             i=0,  # uninitialized
@@ -88,15 +121,17 @@ class Battery:
         return state
 
     def step(self, power_setpoint: float, dt: float) -> None:
-        """
-        Update the battery state based on a power setpoint and timestep.
-        If the battery cannot fulfill the power setpoint due to technical limits, it will curtail the current and update the state accordingly.
+        """Advance the battery state by one timestep.
 
-            Args:
-            power_sentpoint: float
-                Input power target in W
-            dt: float
-                Timestep in s
+        If the battery cannot fulfil the power setpoint due to hard limits
+        (C-rate, voltage window, SOC window) or optional derating, the
+        current is curtailed and ``state.power`` reflects what was actually
+        delivered — not the original setpoint.
+
+        Args:
+            power_setpoint: Requested power in W. Positive = charging,
+                negative = discharging.
+            dt: Timestep in seconds.
         """
         state: BatteryState = self.state
         state.is_charge = power_setpoint > 0.0
@@ -169,12 +204,20 @@ class Battery:
             self.degradation.step(self.state, dt)  # updates state.soh_Q and state.soh_R
 
     def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
-        """
-        Calculates the battery current that fulfils the power setpoint.
+        """Solve the ECM for the current that meets a power setpoint.
 
-        The equilibrium current is calculated based on the equivalent circuit model
-        p = i * v
-          = i * (ocv + rint * i)
+        Solves the quadratic ``P = I × (OCV + hys + Rint × I)`` for ``I``
+        and returns the physically meaningful (positive-discriminant) root.
+
+        Args:
+            power_setpoint: Target power in W.
+            ocv: System open-circuit voltage in V.
+            hys: System hysteresis voltage in V.
+            rint: System internal resistance in Ω.
+
+        Returns:
+            Equilibrium current in A. Positive = charging, negative =
+            discharging.
         """
         ocv = ocv + hys  # include hysteresis in equilibrium calculation
         if power_setpoint == 0.0:
@@ -184,7 +227,27 @@ class Battery:
     def calculate_max_currents(
         self, state: BatteryState, dt: float, ocv: float, hys: float, rint: float, Q: float
     ) -> tuple[float, float]:
-        """Return (i_max_charge, i_max_discharge) based on C-rate, voltage and SOC limits."""
+        """Return the allowed current window for the next timestep.
+
+        Each bound is the most restrictive of three limits: the C-rate
+        limit (from cell ``max_charge_rate`` / ``max_discharge_rate``), the
+        voltage limit (current that would drive terminal voltage to
+        ``max_voltage`` or ``min_voltage`` this step), and the SOC limit
+        (current that would drive SOC to the configured ``soc_limits``
+        this step).
+
+        Args:
+            state: Current battery state (reads ``soc``).
+            dt: Timestep in seconds.
+            ocv: System open-circuit voltage in V.
+            hys: System hysteresis voltage in V.
+            rint: System internal resistance in Ω.
+            Q: Current capacity in Ah (scaled by ``soh_Q``).
+
+        Returns:
+            Tuple ``(i_max_charge, i_max_discharge)`` in A. Charge bound
+            is non-negative; discharge bound is non-positive.
+        """
         (soc_min, soc_max) = self.soc_limits
         soc = state.soc
 

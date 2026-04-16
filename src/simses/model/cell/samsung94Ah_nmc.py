@@ -7,6 +7,18 @@ from simses.battery.properties import ElectricalCellProperties, ThermalCellPrope
 
 
 class Samsung94AhNMC(CellType):
+    """Samsung 94 Ah prismatic NMC cell.
+
+    High-energy lithium nickel-manganese-cobalt-oxide cell typical of
+    stationary and automotive applications. Analytical ``OCV(SOC)`` as a
+    sum of sigmoids and a linear term; constant internal resistance
+    (SoC- and temperature-independent).
+
+    Source: Collath et al., "Suitability of late-life lithium-ion cells
+    for battery energy storage systems", Journal of Energy Storage 87
+    (2024) 111508, doi:10.1016/j.est.2024.111508.
+    """
+
     def __init__(self) -> None:
         super().__init__(
             electrical=ElectricalCellProperties(

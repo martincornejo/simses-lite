@@ -41,23 +41,20 @@ class ConverterState:
 class Converter:
     """AC/DC converter that wraps a downstream storage with a loss model.
 
-    Clamps the AC power setpoint to the rated max_power, converts it to DC
-    using the loss model, and forwards it to the component.  If the component
-    cannot fulfill the requested DC power, the converter recalculates the
-    actual AC power from the delivered DC power.
+    Clamps the AC power setpoint to the rated ``max_power``, converts it to
+    DC via the loss model, and forwards it to the storage. If the storage
+    cannot fulfil the requested DC power (by more than 1%), the converter
+    recomputes the actual AC power from the delivered DC power.
 
-    The storage can be any object with an ``update(power_setpoint, dt)``
-    method and a ``state.power`` attribute — typically a Battery, but also
-    another Converter (enabling converter chaining).
+    The storage is duck-typed: any object with a ``step(power_setpoint, dt)``
+    method and a ``state.power`` attribute — typically a :class:`Battery`,
+    but also another :class:`Converter` (enabling converter chaining).
 
     Attributes:
-        max_power (float): Rated maximum power of the converter in W.
-        state (ConverterState): Current converter state (power, setpoint, loss).
-        model (ConverterLossModel): Loss model for AC/DC conversion.
+        max_power: Rated maximum power of the converter in W.
+        state: Current converter state (power, setpoint, loss).
+        model: Loss model for AC/DC conversion.
         storage: Downstream storage receiving the DC power setpoint.
-
-    Methods:
-        update(power_setpoint, dt): Apply a power setpoint over a timestep.
     """
 
     def __init__(self, loss_model: ConverterLossModel, max_power: float, storage) -> None:
@@ -66,7 +63,24 @@ class Converter:
         self.model = loss_model
         self.storage = storage
 
-    def step(self, power_setpoint, dt):
+    def step(self, power_setpoint: float, dt: float) -> None:
+        """Apply an AC power setpoint over one timestep.
+
+        Two-pass resolution:
+          1. Clamp the AC setpoint to ``[-max_power, max_power]``.
+          2. Convert to DC via the loss model and delegate to
+             ``storage.step(power_dc, dt)``.
+          3. If the storage cannot fulfil the DC request (mismatch > 1%),
+             recompute the actual AC power from the delivered DC power.
+
+        Side effects: updates ``self.state`` with the resulting
+        ``power_setpoint``, ``power`` (AC side), and ``loss``.
+
+        Args:
+            power_setpoint: Requested AC power in W. Positive = charging,
+                negative = discharging.
+            dt: Timestep in seconds.
+        """
         max_power = self.max_power
         power_ac = max(-max_power, min(power_setpoint, max_power))
         power_dc = self.ac_to_dc(power_ac)

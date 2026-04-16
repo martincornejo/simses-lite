@@ -24,6 +24,10 @@ class SinamicsS120:
             ``Charging`` column for both directions — keeps the model strictly
             symmetric about zero power. Set to ``True`` to preserve the
             measured charge/discharge asymmetry.
+
+    Source: Schimpe et al., "Energy efficiency evaluation of grid
+    connection scenarios for stationary battery energy storage systems",
+    Energy Procedia 155 (2018) 77–101, doi:10.1016/j.egypro.2018.11.065.
     """
 
     def __init__(self, use_discharging_curve: bool = False) -> None:
@@ -51,6 +55,21 @@ class SinamicsS120:
 
 
 class SinamicsS120Fit:
+    """Siemens Sinamics S120 converter loss model from a parametric fit.
+
+    Symmetric loss model of the form
+    ``loss(p) = k0 × (1 − exp(−m0·|p|)) + k1·|p| + k2·|p|²``
+    where ``p`` is normalised power (p.u. of the converter's rated max
+    power). The coefficients are a least-squares fit to the same
+    measurement data used by :class:`SinamicsS120`. Faster to evaluate
+    than the lookup-table variant because the loss curve is sampled at
+    101 points at construction time rather than reading a 1001-row CSV.
+
+    Source: Schimpe et al., "Energy efficiency evaluation of grid
+    connection scenarios for stationary battery energy storage systems",
+    Energy Procedia 155 (2018) 77–101, doi:10.1016/j.egypro.2018.11.065.
+    """
+
     def __init__(self) -> None:
         # self.params = {"k0": 0.00601144, "k1": 0.00863612, "k2": 0.01195589, "m0": 97}
         params = (0.00601144, 0.00863612, 0.01195589, 97)
