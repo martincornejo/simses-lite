@@ -39,6 +39,11 @@ docs = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+# Make `examples/` importable in tests so example scripts can be used
+# as smoke tests (e.g. `from examples.logging import simulate`).
+pythonpath = ["."]
+
 [tool.codespell]
 # Skip build artefacts, virtualenvs, caches, lockfiles, and non-text data.
 skip = "./site,./.venv,./.ruff_cache,./.pytest_cache,./build,./dist,./src/simses.egg-info,*.lock,*.csv"
