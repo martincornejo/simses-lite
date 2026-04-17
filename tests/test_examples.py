@@ -11,6 +11,7 @@ silently rot a user-facing snippet.
 import pandas as pd
 import pytest
 
+from examples.extending.capacitor_storage import simulate as simulate_capacitor_storage
 from examples.extending.custom_cell import simulate as simulate_custom_cell
 from examples.extending.custom_degradation import simulate as simulate_custom_degradation
 from examples.extending.custom_loss_model import (
@@ -114,3 +115,21 @@ def test_custom_degradation():
     # The composition invariant: soh_Q = 1 − qloss_cal − qloss_cyc.
     invariant = df["soh_Q"] - (1 - df["qloss_cal"] - df["qloss_cyc"])
     assert invariant.abs().max() < 1e-12
+
+
+def test_capacitor_storage():
+    df = simulate_capacitor_storage(n_steps=10, dt=1.0)
+
+    # Shape and schema.
+    assert len(df) == 10
+    assert set(df.columns) == {"V_cap", "i", "heat", "T"}
+    assert not df.isna().any().any()
+
+    # Pure discharge invariants.
+    assert df["V_cap"].diff().iloc[1:].lt(0).all()  # cap voltage drops each step
+    assert (df["i"] < 0).all()  # current stays in discharge
+    assert (df["heat"] >= 0).all()  # ESR dissipation non-negative
+
+    # Thermal coupling works: the ambient model picked up the ESR heat
+    # and warmed the capacitor above its initial temperature.
+    assert df["T"].iloc[-1] > df["T"].iloc[0]
