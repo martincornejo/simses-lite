@@ -62,7 +62,7 @@ class TwoSegmentEfficiency:
 Key design points:
 
 - The ``eff`` curve is defined once, **on the AC axis**, and sampled at construction. Both directions read the same `(ac, dc)` pairs — `dc_to_ac` just flips the lookup axes.
-- The arrays are stitched into a single monotonically-increasing curve from −1 to +1, so `interp1d_scalar` (a scalar `bisect`-based helper from [`simses.interpolation`][simses.interpolation]) handles both signs.
+- The arrays are stitched into a single monotonically-increasing curve from −1 to +1, so `interp1d_scalar` (a scalar `bisect`-based helper from [`simses.interpolation`](../api/interpolation.md)) handles both signs.
 - 101 sample points per direction is plenty for a smooth analytical curve; for noisy measured data you'd use more. The shipped `SinamicsS120` samples every 10th row of a 1001-point CSV.
 
 Plug it into a `Converter` the same way as any shipped model:

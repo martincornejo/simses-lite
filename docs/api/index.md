@@ -10,6 +10,7 @@ Complete reference for all public classes and functions in simses.
 | [`simses.converter`](converter.md) | AC/DC converter wrapper |
 | [`simses.degradation`](degradation.md) | Degradation models and state |
 | [`simses.thermal`](thermal.md) | Thermal container and ambient models |
+| [`simses.interpolation`](interpolation.md) | Fast scalar 1-D / 2-D linear interpolation helpers |
 | [`simses.model.*`](models.md) | Concrete cell, converter, degradation, and thermal implementations |
 
 ## Quick Reference

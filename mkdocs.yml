@@ -110,6 +110,7 @@ nav:
       - Converter: api/converter.md
       - Degradation: api/degradation.md
       - Thermal: api/thermal.md
+      - Interpolation: api/interpolation.md
       - Models: api/models.md
   - About: about.md
 
