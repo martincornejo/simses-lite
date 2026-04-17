@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 from examples.extending.custom_cell import simulate as simulate_custom_cell
+from examples.extending.custom_degradation import simulate as simulate_custom_degradation
 from examples.extending.custom_loss_model import (
     TwoSegmentEfficiency,
 )
@@ -90,3 +91,26 @@ def test_custom_loss_model():
     discharge_low = loss_frac.iloc[90:120].mean()
     assert charge_low > charge_high
     assert discharge_low > discharge_high
+
+
+def test_custom_degradation():
+    df = simulate_custom_degradation(n_cycles=4, dt=60.0)
+
+    # Shape and schema.
+    assert len(df) == 240
+    assert set(df.columns) == {"soh_Q", "soh_R", "qloss_cal", "qloss_cyc"}
+    assert not df.isna().any().any()
+
+    # Both aging mechanisms fired.
+    assert df["qloss_cal"].iloc[-1] > 0
+    assert df["qloss_cyc"].iloc[-1] > 0
+
+    # Capacity SoH monotonically decreases; resistance SoH monotonically increases.
+    assert df["soh_Q"].diff().iloc[1:].le(0).all()
+    assert df["soh_R"].diff().iloc[1:].ge(0).all()
+    assert df["soh_Q"].iloc[-1] < 1.0
+    assert df["soh_R"].iloc[-1] > 1.0
+
+    # The composition invariant: soh_Q = 1 − qloss_cal − qloss_cyc.
+    invariant = df["soh_Q"] - (1 - df["qloss_cal"] - df["qloss_cyc"])
+    assert invariant.abs().max() < 1e-12
