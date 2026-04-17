@@ -63,7 +63,7 @@ converter = Converter(
 
 ## Extending
 
-Writing a new converter loss model means implementing `ac_to_dc(power_norm)` and `dc_to_ac(power_norm)` on normalised power. A dedicated extension guide is in progress; until it lands, the [Converter concept page](../concepts/converter.md) and the source of the three shipped models are the best reference.
+Writing a new converter loss model means implementing `ac_to_dc(power_norm)` and `dc_to_ac(power_norm)` on normalised power. See [Extending Converter Loss Models](extending-converters.md) for the full walkthrough, including the reciprocity trap and the lookup-table pattern that avoids it.
 
 ## See Also
 

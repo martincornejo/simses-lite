@@ -101,6 +101,11 @@ nav:
       - Choosing a Cell Model: guides/cell-models.md
       - Choosing a Converter Model: guides/converter-models.md
       - Multi-String Systems: guides/multi-string.md
+      - Logging and Plots: guides/logging-and-plots.md
+      - Extending Cell Models: guides/extending-cells.md
+      - Extending Converter Models: guides/extending-converters.md
+      - Extending Degradation: guides/extending-degradation.md
+      - Extending Storage: guides/extending-storage.md
   - Tutorials:
       - Overview: tutorials/index.md
       - Demo: tutorials/demo.ipynb

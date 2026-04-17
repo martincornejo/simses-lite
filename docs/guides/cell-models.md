@@ -52,7 +52,7 @@ A 96-series string of these cells gives â‰ˆ 353 V nominal with 94 Ah capacity â€
 
 ## Extending
 
-Writing a new cell model means subclassing `CellType` and implementing `open_circuit_voltage()` and `internal_resistance()`, plus (optionally) `hysteresis_voltage()`, `entropic_coefficient()`, and `default_degradation_model()`. A dedicated extension guide is in progress; until it lands, the [Battery concept page](../concepts/battery.md) and the source of the two shipped models are the best reference.
+Writing a new cell model means subclassing `CellType` and implementing `open_circuit_voltage()` and `internal_resistance()`, plus (optionally) `hysteresis_voltage()`, `entropic_coefficient()`, and `default_degradation_model()`. See [Extending Cell Models](extending-cells.md) for the full walkthrough, including the test-harness hookup and the CSV-backed lookup pattern.
 
 ## See Also
 

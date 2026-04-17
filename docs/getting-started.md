@@ -79,4 +79,4 @@ Power:       -50.00 W
 
 - **Just learning the API** → the full [demo tutorial notebook](tutorials/demo.ipynb).
 - **Running a study** → the [Concepts](concepts/battery.md) pages for understanding, then [User Guides](guides/installation.md) for applied recipes.
-- **Extending simses** → start with the [Concepts](concepts/battery.md) page for your subsystem; dedicated extension guides are coming.
+- **Extending simses** → one extension guide per subsystem: [cells](guides/extending-cells.md), [converters](guides/extending-converters.md), [degradation](guides/extending-degradation.md), [non-battery storage](guides/extending-storage.md).

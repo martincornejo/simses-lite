@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class ConverterLossModel(Protocol):
@@ -54,7 +54,7 @@ class Converter:
         storage: Downstream storage receiving the DC power setpoint.
     """
 
-    def __init__(self, loss_model: ConverterLossModel, max_power: float, storage) -> None:
+    def __init__(self, loss_model: ConverterLossModel, max_power: float, storage: Any) -> None:
         """
         Args:
             loss_model: AC/DC loss model satisfying :class:`ConverterLossModel`.

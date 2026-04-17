@@ -35,7 +35,7 @@ print(f"SOC: {battery.state.soc:.3f}, V: {battery.state.v:.2f}")
 
 - **New to simses.** → [Getting Started](getting-started.md) — a five-minute walkthrough.
 - **Running a study.** → [Concepts](concepts/battery.md) for understanding the subsystems, [User Guides](guides/installation.md) for applied recipes.
-- **Extending simses.** → start with the relevant [Concepts](concepts/battery.md) page; dedicated extension guides are in progress.
+- **Extending simses.** → one extension guide per subsystem: [cells](guides/extending-cells.md), [converters](guides/extending-converters.md), [degradation](guides/extending-degradation.md), [non-battery storage](guides/extending-storage.md).
 - **Full walkthrough.** → the interactive [demo tutorial notebook](tutorials/demo.ipynb).
 
 ## Contributing
