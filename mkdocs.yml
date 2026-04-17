@@ -112,7 +112,7 @@ nav:
       - Thermal: api/thermal.md
       - Interpolation: api/interpolation.md
       - Models: api/models.md
-  - About: about.md
+  - Contributing: contributing.md
 
 extra:
   social:
