@@ -26,18 +26,18 @@ class ToyLTO(CellType):
     def __init__(self) -> None:
         super().__init__(
             electrical=ElectricalCellProperties(
-                nominal_capacity=40.0,      # Ah
-                nominal_voltage=2.3,        # V
-                max_voltage=2.8,            # V
-                min_voltage=1.5,            # V
-                max_charge_rate=4.0,        # 1/h
-                max_discharge_rate=4.0,     # 1/h
+                nominal_capacity=40.0,  # Ah
+                nominal_voltage=2.3,  # V
+                max_voltage=2.8,  # V
+                min_voltage=1.5,  # V
+                max_charge_rate=4.0,  # 1/h
+                max_discharge_rate=4.0,  # 1/h
             ),
             thermal=ThermalCellProperties(
-                min_temperature=253.15,     # K  (−20 °C)
-                max_temperature=333.15,     # K  (+60 °C)
-                mass=1.0,                   # kg per cell
-                specific_heat=1000.0,       # J/kgK
+                min_temperature=253.15,  # K  (−20 °C)
+                max_temperature=333.15,  # K  (+60 °C)
+                mass=1.0,  # kg per cell
+                specific_heat=1000.0,  # J/kgK
                 convection_coefficient=10.0,  # W/m²K
             ),
             cell_format=PrismaticCell(height=120, width=20, length=100),  # mm
@@ -65,13 +65,13 @@ def simulate(n_steps: int = 60, dt: float = 60.0) -> pd.DataFrame:
     """
     battery = Battery(
         cell=ToyLTO(),
-        circuit=(24, 1),                # 24 cells in series ≈ 55 V nominal
+        circuit=(24, 1),  # 24 cells in series ≈ 55 V nominal
         initial_states={"start_soc": 0.7, "start_T": 298.15},
     )
 
     log: dict[str, list[float]] = {"soc": [], "v": [], "i": [], "power": []}
     for _ in range(n_steps):
-        battery.step(-500.0, dt)        # discharge at 500 W
+        battery.step(-500.0, dt)  # discharge at 500 W
         log["soc"].append(battery.state.soc)
         log["v"].append(battery.state.v)
         log["i"].append(battery.state.i)
