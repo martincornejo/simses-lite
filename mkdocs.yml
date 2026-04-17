@@ -73,10 +73,20 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.details
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
@@ -91,6 +101,11 @@ nav:
       - Choosing a Cell Model: guides/cell-models.md
       - Choosing a Converter Model: guides/converter-models.md
       - Multi-String Systems: guides/multi-string.md
+      - Logging and Plots: guides/logging-and-plots.md
+      - Extending Cell Models: guides/extending-cells.md
+      - Extending Converter Models: guides/extending-converters.md
+      - Extending Degradation: guides/extending-degradation.md
+      - Extending Storage: guides/extending-storage.md
   - Tutorials:
       - Overview: tutorials/index.md
       - Demo: tutorials/demo.ipynb
@@ -100,12 +115,13 @@ nav:
       - Converter: api/converter.md
       - Degradation: api/degradation.md
       - Thermal: api/thermal.md
+      - Interpolation: api/interpolation.md
       - Models: api/models.md
-  - About: about.md
+  - Contributing: contributing.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/tum-ees/simses
 
-copyright: Copyright &copy; 2026 TUM EES
+copyright: Copyright &copy; 2020&ndash;2026 TUM EES

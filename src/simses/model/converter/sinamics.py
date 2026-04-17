@@ -63,9 +63,11 @@ class SinamicsS120Fit:
     ``loss(p) = k0 × (1 − exp(−m0·|p|)) + k1·|p| + k2·|p|²``
     where ``p`` is normalised power (p.u. of the converter's rated max
     power). The coefficients are a least-squares fit to the same
-    measurement data used by :class:`SinamicsS120`. Faster to evaluate
-    than the lookup-table variant because the loss curve is sampled at
-    101 points at construction time rather than reading a 1001-row CSV.
+    measurement data used by :class:`SinamicsS120`. At construction the
+    fit is sampled at 101 points and interpolated at runtime — so the
+    evaluation cost matches :class:`SinamicsS120`; the two variants
+    differ only in how their interpolation points are generated
+    (parametric fit vs measured CSV).
 
     Source: Schimpe et al., "Energy efficiency evaluation of grid
     connection scenarios for stationary battery energy storage systems",

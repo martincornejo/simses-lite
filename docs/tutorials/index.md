@@ -11,10 +11,10 @@ the main simses features with live code and plots.
 
 | Part | Topic | Key concepts |
 |---|---|---|
-| 1 | Battery Only | ECM update, SOC tracking, degradation |
+| 1 | Battery Only | ECM simulation, SOC tracking, degradation |
 | 2 | Battery + Converter | AC/DC conversion, Sinamics S120 efficiency curve, peak shaving |
 | 3 | Two Strings | SOC-weighted power distribution, independent string tracking |
-| 4 | Thermal Model | Container thermal model, HVAC, ambient coupling |
+| 4 | Thermal Model | `AmbientThermalModel` coupling multiple strings, effective-cooling-area tuning |
 
 ### Prerequisites
 
@@ -25,12 +25,12 @@ the main simses features with live code and plots.
 
 ```bash
 # With uv (recommended)
-uv sync --group notebooks
-uv run jupyter notebook notebooks/demo.ipynb
+uv sync --extra notebooks
+uv run jupyter notebook docs/tutorials/demo.ipynb
 
 # Or with pip
-pip install simses jupyter matplotlib tqdm
-jupyter notebook notebooks/demo.ipynb
+pip install "simses[notebooks]"
+jupyter notebook docs/tutorials/demo.ipynb
 ```
 
 ### Estimated Time
