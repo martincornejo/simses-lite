@@ -1,9 +1,11 @@
 # Getting Started
 
+A five-minute walkthrough: install simses and run a simple charge/discharge cycle.
+
 ## Prerequisites
 
-- Python 3.12 or higher
-- pip or [uv](https://docs.astral.sh/uv/) (recommended)
+- **Python 3.12 or newer** (required).
+- **pip** or **[uv](https://docs.astral.sh/uv/)** (recommended — faster installs and built-in virtualenv management).
 
 ## Installation
 
@@ -17,37 +19,64 @@ Or with uv:
 uv add simses
 ```
 
-## First Simulation
-
-The example below runs a simple battery charge/discharge cycle and prints the
-final state of charge.
+Quick import check:
 
 ```python
-import numpy as np
+from simses.model.cell.sony_lfp import SonyLFP
+
+cell = SonyLFP()                # 3 Ah, 3.2 V LFP cell (Sony/Murata US26650FTC1)
+```
+
+## Your first simulation
+
+Build a 13-series pack of `SonyLFP` cells starting at 50 % SOC, and discharge it at 50 W for 30 minutes.
+
+```python
 from simses.battery import Battery
 from simses.model.cell.sony_lfp import SonyLFP
 
-# Create a 13s1p LFP battery string
-battery = Battery(cell=SonyLFP(), serial=13, parallel=1)
+battery = Battery(
+    cell=SonyLFP(),
+    circuit=(13, 1),  # 13 serial, 1 parallel
+    initial_states={"start_soc": 0.5, "start_T": 298.15},
+)
 
-dt = 60  # timestep in seconds
+dt = 60  # seconds per step
 
-# Charge at 5 kW for 1 hour, then discharge
-charge_profile = np.full(60, 5000.0)   # positive = charging
-discharge_profile = np.full(60, -5000.0)
+for _ in range(30):
+    battery.step(-50.0, dt)   # negative = discharging
 
-for power in np.concatenate([charge_profile, discharge_profile]):
-    battery.step(power, dt)
-
-print(f"SOC:     {battery.state.soc:.2%}")
-print(f"Voltage: {battery.state.voltage:.1f} V")
+s = battery.state
+print(f"SOC:         {s.soc:.3f}")
+print(f"Terminal V:  {s.v:.2f} V")
+print(f"Current:     {s.i:.2f} A")
+print(f"Temperature: {s.T:.2f} K")
+print(f"Power:       {s.power:.2f} W")
 ```
 
-!!! tip
-    [PLACEHOLDER: Add a note about sign convention — positive = charging]
+Expected output:
 
-## What to Read Next
+```text
+SOC:         0.303
+Terminal V:  42.17 V
+Current:     -1.19 A
+Temperature: 298.15 K
+Power:       -50.00 W
+```
 
-- [Battery Model Concepts](concepts/battery.md) — understand the ECM and circuit model
-- [Choosing a Cell Model](guides/cell-models.md) — NMC vs LFP options
-- [Demo Tutorial](tutorials/index.md) — interactive notebook with full examples
+!!! info "Sign convention"
+    **Positive power/current = charging.** **Negative = discharging.** Applies uniformly across `Battery`, `Converter`, loss models, and every signed field of `BatteryState`. The `-1.18 A` above means the pack is actively delivering 1.18 A to the load during the last discharge step.
+
+## Common pitfalls
+
+!!! warning "Things that catch newcomers"
+    - **`dt` is in seconds.** One minute is `dt=60`. Steps larger than a few minutes lose accuracy — power, SOC, and temperature dynamics need finer time resolution than that.
+    - **Sign.** Passing `-5000` while meaning "charge at 5 kW" will discharge the battery and pin it at the SOC floor. If the output surprises you, check the sign.
+    - **SOC pinned at a limit.** If `state.soc` stays flat at `1.0` or `0.0` across consecutive steps, the setpoint is being rejected by the SOC hard limit — lower the power or widen `soc_limits`.
+    - **`initial_states` is required.** Minimum: `{"start_soc": ..., "start_T": ...}`. Omitting it raises `TypeError`.
+
+## What to read next
+
+- **Just learning the API** → the full [demo tutorial notebook](tutorials/demo.ipynb).
+- **Running a study** → the [Concepts](concepts/battery.md) pages for understanding, then [User Guides](guides/installation.md) for applied recipes.
+- **Extending simses** → start with the [Concepts](concepts/battery.md) page for your subsystem; dedicated extension guides are coming.
