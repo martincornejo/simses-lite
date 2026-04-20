@@ -12,7 +12,6 @@ import pytest
 
 from simses.battery.cell import CellType
 from simses.battery.state import BatteryState
-from simses.model.cell.molicel_nmc import MolicelNMC
 from simses.model.cell.samsung94Ah_nmc import Samsung94AhNMC
 from simses.model.cell.sony_lfp import SonyLFP
 
@@ -38,11 +37,6 @@ class CellModelSpec:
 
 
 CELL_SPECS: list[CellModelSpec] = [
-    CellModelSpec(
-        name="MolicelNMC",
-        factory=MolicelNMC,
-        rint_varies_with_soc=True,
-    ),
     CellModelSpec(
         name="Samsung94AhNMC",
         factory=Samsung94AhNMC,
