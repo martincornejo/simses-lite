@@ -29,7 +29,7 @@ degradation = DegradationModel(
 )
 
 battery = Battery(cell=SonyLFP(), circuit=(13, 2),
-                  initial_states={"start_soc": 0.5, "start_T": 298.15},
+                  initial_states={"start_soc": 0.5, "start_T": 25.0},
                   degradation=degradation)
 ```
 

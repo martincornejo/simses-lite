@@ -42,8 +42,8 @@ class ThermalCellProperties:
     """Thermal parameters of a single cell.
 
     Attributes:
-        min_temperature: Minimum allowed cell temperature in K.
-        max_temperature: Maximum allowed cell temperature in K.
+        min_temperature: Minimum allowed cell temperature in °C.
+        max_temperature: Maximum allowed cell temperature in °C.
         mass: Mass of one cell in kg.
         specific_heat: Specific heat capacity in J/kgK.
         convection_coefficient: Convective heat transfer coefficient

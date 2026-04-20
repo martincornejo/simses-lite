@@ -59,7 +59,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -89,7 +89,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -126,7 +126,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -155,7 +155,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -184,7 +184,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -216,7 +216,7 @@ class TestDegradationModel:
         state = BatteryState(
             v=3.6,
             i=0,
-            T=298.15,
+            T=25.0,
             power=0,
             power_setpoint=0,
             loss=0,
@@ -259,7 +259,7 @@ class TestBatteryDegradationIntegration:
         bat = Battery(
             cell=SimpleCell(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=model,
         )
 
@@ -280,7 +280,7 @@ class TestBatteryDegradationIntegration:
         bat = Battery(
             cell=SimpleCell(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=model,
         )
 

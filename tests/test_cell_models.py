@@ -32,8 +32,8 @@ class CellModelSpec:
     rint_differs_charge_discharge: bool = False
 
     # temperature range safe for Rint queries (e.g. interpolation bounds)
-    rint_temp_low: float = 283.15
-    rint_temp_high: float = 333.15
+    rint_temp_low: float = 10.0
+    rint_temp_high: float = 60.0
 
 
 CELL_SPECS: list[CellModelSpec] = [
@@ -47,8 +47,8 @@ CELL_SPECS: list[CellModelSpec] = [
         rint_varies_with_soc=True,
         rint_varies_with_temperature=True,
         rint_differs_charge_discharge=True,
-        rint_temp_low=283.15,
-        rint_temp_high=333.15,
+        rint_temp_low=10.0,
+        rint_temp_high=60.0,
     ),
 ]
 
@@ -66,7 +66,7 @@ def cell(spec) -> CellType:
     return spec.factory()
 
 
-def _state(soc: float = 0.5, T: float = 298.15, is_charge: bool = True) -> BatteryState:
+def _state(soc: float = 0.5, T: float = 25.0, is_charge: bool = True) -> BatteryState:
     return BatteryState(
         v=0,
         i=0,

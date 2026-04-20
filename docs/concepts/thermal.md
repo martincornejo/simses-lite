@@ -24,7 +24,7 @@ Nothing in the thermal model calls `battery.step()`, and nothing in `battery.ste
 ```python
 from simses.thermal import AmbientThermalModel
 
-env = AmbientThermalModel(T_ambient=298.15)
+env = AmbientThermalModel(T_ambient=25.0)
 env.add_component(battery)
 
 for t in range(n_steps):
@@ -38,7 +38,7 @@ The thermal models talk to their nodes through [`ThermalComponent`][simses.therm
 
 | Member | Type | Direction | Meaning |
 |---|---|---|---|
-| `state.T` | float | read / written | Component temperature in K. |
+| `state.T` | float | read / written | Component temperature in °C. |
 | `state.heat` | float | read | Total internal heat generation in W (sign: + = heats the component, − possible when reversible cooling dominates). |
 | `thermal_capacity` | float | read | Lumped thermal capacity in J/K. |
 | `thermal_resistance` | float | read | Thermal resistance to the surrounding air/ambient in K/W. |
@@ -175,9 +175,9 @@ Roof is treated differently from vertical faces (full sky view, no ground-reflec
 
 | Field | Unit | Meaning |
 |---|---|---|
-| `T_air` | K | Internal air temperature. |
-| `T_in`, `T_mid`, `T_out` | K | Wall-layer temperatures. |
-| `T_amb` | K | External ambient (updatable driver). |
+| `T_air` | °C | Internal air temperature. |
+| `T_in`, `T_mid`, `T_out` | °C | Wall-layer temperatures. |
+| `T_amb` | °C | External ambient (updatable driver). |
 | `Q_solar` | W | Absorbed solar power on the outer wall (updatable driver). |
 | `power_th` | W | HVAC thermal power delivered this step (+ heat, − cool). |
 | `power_el` | W | HVAC electrical draw this step (≥ 0). |

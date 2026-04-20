@@ -48,7 +48,7 @@ class SqrtTimeCalendar:
     """
 
     K_REF = 1e-5  # [1/sqrt(s)] loss rate at T_ref
-    T_REF = 298.15  # [K] reference temperature
+    T_REF = 25.0  # [°C] reference temperature
     T_ACC = 20.0  # [K] Q10-style acceleration — +20 K doubles the rate
 
     def _stress(self, T: float) -> float:
@@ -107,7 +107,7 @@ def simulate(n_cycles: int = 4, dt: float = 60.0) -> pd.DataFrame:
     battery = Battery(
         cell=SonyLFP(),
         circuit=(13, 10),  # 30 Ah, ~42 V
-        initial_states={"start_soc": 0.5, "start_T": 308.15},  # 35 °C
+        initial_states={"start_soc": 0.5, "start_T": 35.0},  # 35 °C
         degradation=degradation,
     )
 

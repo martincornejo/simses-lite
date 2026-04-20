@@ -50,7 +50,7 @@ class CapacitorState:
         loss:            Ohmic loss across the ESR in W (``R_s · i²``, ≥ 0).
         heat:            Internal heat generation in W — equals ``loss``
                          for this purely-ohmic model.
-        T:               Lumped temperature in K (written by a thermal
+        T:               Lumped temperature in °C (written by a thermal
                          model if registered, otherwise unchanged).
     """
 
@@ -62,7 +62,7 @@ class CapacitorState:
     power_setpoint: float = 0.0
     loss: float = 0.0
     heat: float = 0.0
-    T: float = 298.15
+    T: float = 25.0
 
 
 class Capacitor:
@@ -86,7 +86,7 @@ class Capacitor:
         mass: float = 1.0,
         specific_heat: float = 1000.0,
         thermal_resistance: float = 1.0,
-        initial_T: float = 298.15,
+        initial_T: float = 25.0,
     ) -> None:
         """
         Args:
@@ -96,7 +96,7 @@ class Capacitor:
             mass: Lumped mass in kg (used for thermal capacity).
             specific_heat: Specific heat capacity in J/kgK.
             thermal_resistance: Thermal resistance to ambient in K/W.
-            initial_T: Starting temperature in K.
+            initial_T: Starting temperature in °C.
         """
         self.capacitance = capacitance
         self.esr = esr
@@ -177,7 +177,7 @@ def simulate(n_steps: int = 10, dt: float = 1.0) -> pd.DataFrame:
         max_power=200.0,
         storage=capacitor,
     )
-    ambient = AmbientThermalModel(T_ambient=298.15)
+    ambient = AmbientThermalModel(T_ambient=25.0)
     ambient.add_component(capacitor)
 
     log: dict[str, list[float]] = {"V_cap": [], "i": [], "heat": [], "T": []}

@@ -111,7 +111,7 @@ class LinearThermalDerating:
     Between T_start and T_max, current is scaled linearly from 100% down to 0%.
     Below T_start: no derating. At or above T_max: current is forced to 0.
 
-    All temperatures must be in Kelvin. Separate thresholds can be configured for
+    All temperatures must be in °C. Separate thresholds can be configured for
     charge and discharge; if omitted, discharge reuses the charge thresholds.
     """
 

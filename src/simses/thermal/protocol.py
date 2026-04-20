@@ -17,7 +17,7 @@ class ThermalComponent(Protocol):
     object with these attributes qualifies (structural subtyping).
 
     Attributes:
-        state:              Mutable state object exposing ``T`` (temperature in K,
+        state:              Mutable state object exposing ``T`` (temperature in °C,
                             read/written) and ``heat`` (heat generation in W, read).
         thermal_capacity:   Thermal capacity in J/K.
         thermal_resistance: Thermal resistance to the thermal environment in K/W.

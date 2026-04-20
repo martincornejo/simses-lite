@@ -11,8 +11,8 @@ from simses.degradation.calendar import CalendarDegradation
 
 # Gas constant [J/(K*mol)]
 R = 8.3144598
-# Reference temperature [K]
-T_REF = 298.15
+# Reference temperature [°C]
+T_REF = 25.0
 
 # Capacity loss coefficients (sqrt(t) model)
 K_REF_QLOSS = 1.2571e-05
@@ -42,7 +42,9 @@ class SonyLFPCalendarDegradation(CalendarDegradation):
         if dt == 0.0:
             return 0.0
 
-        k_T_q = K_REF_QLOSS * math.exp(-EA_QLOSS / R * (1.0 / state.T - 1.0 / T_REF))
+        T_K = state.T + 273.15
+        T_REF_K = T_REF + 273.15
+        k_T_q = K_REF_QLOSS * math.exp(-EA_QLOSS / R * (1.0 / T_K - 1.0 / T_REF_K))
         k_soc_q = C_QLOSS * (state.soc - 0.5) ** 3 + D_QLOSS
         stress_q = k_T_q * k_soc_q
 
@@ -58,6 +60,8 @@ class SonyLFPCalendarDegradation(CalendarDegradation):
         if dt == 0.0:
             return 0.0
 
-        k_T_r = K_REF_RINC * math.exp(-EA_RINC / R * (1.0 / state.T - 1.0 / T_REF))
+        T_K = state.T + 273.15
+        T_REF_K = T_REF + 273.15
+        k_T_r = K_REF_RINC * math.exp(-EA_RINC / R * (1.0 / T_K - 1.0 / T_REF_K))
         k_soc_r = C_RINC * (state.soc - 0.5) ** 2 + D_RINC
         return k_T_r * k_soc_r * dt

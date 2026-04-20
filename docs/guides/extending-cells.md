@@ -54,7 +54,7 @@ class ToyLTO(CellType):
                 max_charge_rate=4.0, max_discharge_rate=4.0,
             ),
             thermal=ThermalCellProperties(
-                min_temperature=253.15, max_temperature=333.15,
+                min_temperature=-20.0, max_temperature=60.0,
                 mass=1.0, specific_heat=1000.0,
                 convection_coefficient=10.0,
             ),
@@ -77,7 +77,7 @@ Use the new cell exactly like a shipped one:
 battery = Battery(
     cell=ToyLTO(),
     circuit=(24, 1),
-    initial_states={"start_soc": 0.7, "start_T": 298.15},
+    initial_states={"start_soc": 0.7, "start_T": 25.0},
 )
 ```
 

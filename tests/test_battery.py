@@ -32,8 +32,8 @@ class SimpleCell(CellType):
         super().__init__(
             electrical=ElectricalCellProperties(**defaults),
             thermal=ThermalCellProperties(
-                min_temperature=233.15,
-                max_temperature=333.15,
+                min_temperature=-40.0,
+                max_temperature=60.0,
                 mass=1.0,
                 specific_heat=1000.0,
                 convection_coefficient=10.0,
@@ -49,7 +49,7 @@ class SimpleCell(CellType):
 
 
 def _make_battery(
-    circuit=(1, 1), soc=0.5, T=298.15, soc_limits=(0.0, 1.0), effective_cooling_area=1.0, **cell_kw
+    circuit=(1, 1), soc=0.5, T=25.0, soc_limits=(0.0, 1.0), effective_cooling_area=1.0, **cell_kw
 ) -> Battery:
     """Helper to create a Battery with the SimpleCell."""
     return Battery(
@@ -70,8 +70,8 @@ class TestBatteryInitialization:
         assert bat.state.soc == 0.8
 
     def test_initial_temperature(self):
-        bat = _make_battery(T=310.0)
-        assert bat.state.T == 310.0
+        bat = _make_battery(T=37.0)
+        assert bat.state.T == 37.0
 
     def test_initial_soh_defaults(self):
         bat = _make_battery()
@@ -472,7 +472,7 @@ class TestVoltageDerating:
         return Battery(
             cell=cell,
             circuit=(1, 1),
-            initial_states={"start_soc": soc, "start_T": 298.15},
+            initial_states={"start_soc": soc, "start_T": 25.0},
             derating=derating,
         )
 
@@ -662,8 +662,8 @@ class TestVoltageDerating:
 # Thermal derating
 # ===================================================================
 class TestThermalDerating:
-    T_START = 318.15  # 45 °C
-    T_MAX = 333.15  # 60 °C
+    T_START = 45.0  # 45 °C
+    T_MAX = 60.0  # 60 °C
 
     def _make(self, T, soc=0.5):
         return Battery(
@@ -674,7 +674,7 @@ class TestThermalDerating:
         )
 
     def test_no_derating_below_T_start(self):
-        T = 310.0
+        T = 40.0
         bat_no = _make_battery(soc=0.5, T=T)
         bat_no.step(power_setpoint=100.0, dt=60.0)
         bat_dr = self._make(T=T)
@@ -682,7 +682,7 @@ class TestThermalDerating:
         assert bat_dr.state.i == pytest.approx(bat_no.state.i, rel=1e-9)
 
     def test_derating_reduces_current_in_zone(self):
-        T = 325.0  # between T_START and T_MAX
+        T = 52.0  # between T_START and T_MAX
         bat_no = _make_battery(soc=0.5, T=T)
         bat_no.step(power_setpoint=100.0, dt=60.0)
         bat_dr = self._make(T=T)
@@ -696,13 +696,13 @@ class TestThermalDerating:
         assert bat.state.i == pytest.approx(0.0, abs=1e-9)
 
     def test_zero_power_unaffected(self):
-        bat = self._make(T=325.0)
+        bat = self._make(T=52.0)
         bat.step(power_setpoint=0.0, dt=60.0)
         assert bat.state.i == 0.0
 
     def test_discharge_uses_same_thresholds_by_default(self):
         """Discharge derating mirrors charge derating when not configured separately."""
-        T = 325.0
+        T = 52.0
         bat_no = _make_battery(soc=0.5, T=T)
         bat_no.step(power_setpoint=-100.0, dt=60.0)
         bat_dr = self._make(T=T)
@@ -720,7 +720,7 @@ class TestDeratingChain:
         bat_chain = Battery(
             cell=SimpleCell(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             derating=DeratingChain([]),
         )
         bat_none = _make_battery(soc=0.5)
@@ -730,7 +730,7 @@ class TestDeratingChain:
 
     def test_chain_thermal_reduces_current(self):
         """Chain with active thermal derating reduces current vs. no derating."""
-        T = 325.0
+        T = 52.0
         cell = SimpleCell()
         derating = DeratingChain([
             LinearVoltageDerating(
@@ -738,7 +738,7 @@ class TestDeratingChain:
                 min_voltage=cell.electrical.min_voltage,
                 charge_start_voltage=4.0,
             ),
-            LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15),
+            LinearThermalDerating(charge_T_start=45.0, charge_T_max=60.0),
         ])
         bat_chain = Battery(
             cell=cell,
@@ -754,12 +754,12 @@ class TestDeratingChain:
     def test_chain_is_itself_a_valid_derating(self):
         """A DeratingChain can be nested inside another DeratingChain."""
         cell = SimpleCell()
-        inner = DeratingChain([LinearThermalDerating(charge_T_start=318.15, charge_T_max=333.15)])
+        inner = DeratingChain([LinearThermalDerating(charge_T_start=45.0, charge_T_max=60.0)])
         outer = DeratingChain([inner])
         bat = Battery(
             cell=cell,
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 325.0},
+            initial_states={"start_soc": 0.5, "start_T": 52.0},
             derating=outer,
         )
         bat.step(power_setpoint=100.0, dt=60.0)
@@ -809,7 +809,7 @@ class TestDefaultDegradationModel:
         bat = Battery(
             cell=SonyLFP(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=True,
         )
         assert bat.degradation is not None
@@ -819,7 +819,7 @@ class TestDefaultDegradationModel:
         bat = Battery(
             cell=SonyLFP(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=True,
         )
         dt = 3600.0  # 1 hour steps
@@ -834,7 +834,7 @@ class TestDefaultDegradationModel:
             Battery(
                 cell=SimpleCell(),
                 circuit=(1, 1),
-                initial_states={"start_soc": 0.5, "start_T": 298.15},
+                initial_states={"start_soc": 0.5, "start_T": 25.0},
                 degradation=True,
             )
 
@@ -843,7 +843,7 @@ class TestDefaultDegradationModel:
         bat = Battery(
             cell=SonyLFP(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=None,
         )
         assert bat.degradation is None
@@ -853,7 +853,7 @@ class TestDefaultDegradationModel:
         bat = Battery(
             cell=SonyLFP(),
             circuit=(1, 1),
-            initial_states={"start_soc": 0.5, "start_T": 298.15},
+            initial_states={"start_soc": 0.5, "start_T": 25.0},
             degradation=False,
         )
         assert bat.degradation is None

@@ -24,7 +24,7 @@ from simses.model.cell.sony_lfp import SonyLFP
 battery = Battery(
     cell=SonyLFP(),
     circuit=(13, 1),
-    initial_states={"start_soc": 0.5, "start_T": 298.15},
+    initial_states={"start_soc": 0.5, "start_T": 25.0},
     degradation=True,                     # picks up the default Naumann pair
 )
 ```
@@ -44,7 +44,7 @@ from simses.model.cell.samsung94Ah_nmc import Samsung94AhNMC
 battery = Battery(
     cell=Samsung94AhNMC(),
     circuit=(96, 1),
-    initial_states={"start_soc": 0.5, "start_T": 298.15},
+    initial_states={"start_soc": 0.5, "start_T": 25.0},
 )
 ```
 

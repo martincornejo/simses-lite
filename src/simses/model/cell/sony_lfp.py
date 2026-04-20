@@ -44,8 +44,8 @@ class SonyLFP(CellType):
                 coulomb_efficiency=1.0,  # p.u.
             ),
             thermal=ThermalCellProperties(
-                min_temperature=273.15,  # K
-                max_temperature=333.15,  # K
+                min_temperature=0.0,  # °C
+                max_temperature=60.0,  # °C
                 mass=0.07,  # kg per cell
                 specific_heat=1001,  # J/kgK
                 convection_coefficient=15,  # W/m2K

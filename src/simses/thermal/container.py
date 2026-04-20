@@ -71,11 +71,11 @@ class ContainerThermalState:
     """Mutable state of a :class:`ContainerThermalModel`.
 
     Attributes:
-        T_air:      Internal air temperature in K.
-        T_in:       Inner wall layer temperature in K.
-        T_mid:      Middle wall layer temperature in K.
-        T_out:      Outer wall layer temperature in K.
-        T_ambient:  External ambient temperature in K.
+        T_air:      Internal air temperature in °C.
+        T_in:       Inner wall layer temperature in °C.
+        T_mid:      Middle wall layer temperature in °C.
+        T_out:      Outer wall layer temperature in °C.
+        T_ambient:  External ambient temperature in °C.
         Q_solar:    Solar irradiance heat load on the outer wall in W
                     (default 0).
         power_th:   HVAC thermal power delivered to the air in W
@@ -140,7 +140,7 @@ class ThermalManagementStrategy(Protocol):
         """Advance the strategy and return the requested thermal power.
 
         Args:
-            T_ref: Reference temperature in K — the maximum temperature
+            T_ref: Reference temperature in °C — the maximum temperature
                    across all registered storage components.
             dt:    Timestep in seconds.
 
@@ -192,7 +192,7 @@ class ThermostatStrategy:
       COOLING → IDLE     if T_air <= T_setpoint
 
     Args:
-        T_setpoint: Target internal air temperature in K.
+        T_setpoint: Target internal air temperature in °C.
         max_power:  Maximum thermal output requested from the HVAC unit in W.
         threshold:  Half-width of the dead-band in K (default 5.0).
     """
@@ -217,7 +217,7 @@ class ThermostatStrategy:
         """Advance the state machine and return the requested thermal power.
 
         Args:
-            T_ref: Reference temperature in K (max battery temperature).
+            T_ref: Reference temperature in °C (max battery temperature).
             dt:    Timestep in seconds (unused but required by protocol).
 
         Returns:
@@ -290,7 +290,7 @@ class ContainerThermalModel:
     Components are registered via :meth:`add_component` and must satisfy
     the :class:`~simses.thermal.protocol.ThermalComponent` protocol:
 
-    * ``state.T``            -- current temperature in K (read/written)
+    * ``state.T``            -- current temperature in °C (read/written)
     * ``state.heat``         -- total heat generation in W (read)
     * ``thermal_capacity``   -- thermal capacity in J/K (read)
     * ``thermal_resistance`` -- thermal resistance to internal air in K/W (read)
@@ -310,8 +310,8 @@ class ContainerThermalModel:
         """
         Args:
             properties: Container geometry and wall-layer parameters.
-            T_ambient: Initial external ambient temperature in K.
-            T_initial: Initial temperature for all internal nodes in K.
+            T_ambient: Initial external ambient temperature in °C.
+            T_initial: Initial temperature for all internal nodes in °C.
             hvac: HVAC hardware model mapping thermal demand to
                 electrical consumption.
             tms: Thermal-management strategy producing the thermal-power
@@ -350,7 +350,7 @@ class ContainerThermalModel:
 
     @property
     def T_ambient(self) -> float:
-        """External ambient temperature in K (convenience accessor for ``state.T_ambient``)."""
+        """External ambient temperature in °C (convenience accessor for ``state.T_ambient``)."""
         return self.state.T_amb
 
     @T_ambient.setter

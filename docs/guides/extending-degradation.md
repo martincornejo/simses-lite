@@ -55,7 +55,7 @@ from simses.battery.state import BatteryState
 
 class SqrtTimeCalendar:
     K_REF = 1e-5          # [1/sqrt(s)] loss rate at T_ref
-    T_REF = 298.15        # [K]
+    T_REF = 25.0          # [°C]
     T_ACC = 20.0          # [K] Q10-style acceleration
 
     def _stress(self, T: float) -> float:
@@ -107,7 +107,7 @@ degradation = DegradationModel(
 battery = Battery(
     cell=SonyLFP(),
     circuit=(13, 10),
-    initial_states={"start_soc": 0.5, "start_T": 298.15},
+    initial_states={"start_soc": 0.5, "start_T": 25.0},
     degradation=degradation,
 )
 ```

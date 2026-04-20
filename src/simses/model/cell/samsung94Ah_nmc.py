@@ -32,8 +32,8 @@ class Samsung94AhNMC(CellType):
                 coulomb_efficiency=1.0,  # p.u.
             ),
             thermal=ThermalCellProperties(
-                min_temperature=233.15,  # K
-                max_temperature=333.15,  # K
+                min_temperature=-40.0,  # °C
+                max_temperature=60.0,  # °C
                 mass=2.1,  # kg per cell
                 specific_heat=1000,  # J/kgK
                 convection_coefficient=15,  # W/m2K

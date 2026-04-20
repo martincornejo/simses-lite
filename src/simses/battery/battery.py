@@ -88,7 +88,7 @@ class Battery:
 
         Args:
             start_soc: Initial state of charge in p.u.
-            start_T: Initial cell temperature in K.
+            start_T: Initial cell temperature in °C.
             start_soh_Q: Initial capacity SoH in p.u. (default 1.0 = fresh).
             start_soh_R: Initial resistance SoH in p.u. (default 1.0 = fresh).
 
@@ -185,7 +185,7 @@ class Battery:
 
         # update losses
         loss_irr = (v - ocv) * i  # irreversible losses
-        loss_rev = entropy * state.T * i  # reversible losses
+        loss_rev = entropy * (state.T + 273.15) * i  # reversible losses (T must be absolute)
         heat = loss_irr + loss_rev  # internal heat generation
 
         # --- phase 2: write output state ---
@@ -370,12 +370,12 @@ class Battery:
 
     @property
     def min_temperature(self) -> float:
-        """Minimum allowed temperature in K."""
+        """Minimum allowed temperature in °C."""
         return self.cell.thermal.min_temperature
 
     @property
     def max_temperature(self) -> float:
-        """Maximum allowed temperature in K."""
+        """Maximum allowed temperature in °C."""
         return self.cell.thermal.max_temperature
 
     @property

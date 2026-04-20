@@ -17,7 +17,7 @@ def make_string(start_soc, circuit=(104, 10), max_power=20_000):
     battery = Battery(
         cell=SonyLFP(),
         circuit=circuit,
-        initial_states={"start_soc": start_soc, "start_T": 298.15},
+        initial_states={"start_soc": start_soc, "start_T": 25.0},
     )
     converter = Converter(
         loss_model=SinamicsS120Fit(),
@@ -91,7 +91,7 @@ Multiple strings in the same container share one thermal model — register each
 ```python
 from simses.thermal import AmbientThermalModel
 
-thermal = AmbientThermalModel(T_ambient=298.15)
+thermal = AmbientThermalModel(T_ambient=25.0)
 for battery, _ in strings:
     thermal.add_component(battery)
 ```

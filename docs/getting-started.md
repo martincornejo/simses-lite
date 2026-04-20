@@ -38,7 +38,7 @@ from simses.model.cell.sony_lfp import SonyLFP
 battery = Battery(
     cell=SonyLFP(),
     circuit=(13, 1),  # 13 serial, 1 parallel
-    initial_states={"start_soc": 0.5, "start_T": 298.15},
+    initial_states={"start_soc": 0.5, "start_T": 25.0},
 )
 
 dt = 60  # seconds per step
@@ -50,7 +50,7 @@ s = battery.state
 print(f"SOC:         {s.soc:.3f}")
 print(f"Terminal V:  {s.v:.2f} V")
 print(f"Current:     {s.i:.2f} A")
-print(f"Temperature: {s.T:.2f} K")
+print(f"Temperature: {s.T:.2f} °C")
 print(f"Power:       {s.power:.2f} W")
 ```
 
@@ -60,7 +60,7 @@ Expected output:
 SOC:         0.303
 Terminal V:  42.17 V
 Current:     -1.19 A
-Temperature: 298.15 K
+Temperature: 25.00 °C
 Power:       -50.00 W
 ```
 

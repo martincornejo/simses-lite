@@ -11,7 +11,7 @@ class BatteryState:
     i: float
         Current flowing into the battery in amperes (A). Positive for charging, negative for discharging.
     T: float
-        Temperature of the battery in kelvin (K).
+        Temperature of the battery in degrees Celsius (°C).
     power: float
         Power of the battery in watts (W).
     power_setpoint: float
@@ -44,7 +44,7 @@ class BatteryState:
 
     v: float  # V
     i: float  # A (positive if charging)
-    T: float  # K
+    T: float  # °C
     power: float  # W
     power_setpoint: float  # W
     soc: float  # p.u.

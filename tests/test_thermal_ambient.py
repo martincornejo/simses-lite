@@ -34,52 +34,52 @@ class _MockComponent:
 class TestAmbientThermalModelUnit:
     def test_equilibrium_no_loss(self):
         """T == T_ambient and loss == 0 => temperature unchanged."""
-        comp = _MockComponent(T=298.15, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp])
+        comp = _MockComponent(T=25.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp])
 
         model.step(dt=1.0)
 
-        assert comp.state.T == pytest.approx(298.15)
+        assert comp.state.T == pytest.approx(25.0)
 
     def test_heating_from_loss(self):
         """Positive loss at T == T_ambient raises temperature."""
-        comp = _MockComponent(T=298.15, loss=500.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp])
+        comp = _MockComponent(T=25.0, loss=500.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp])
 
         model.step(dt=1.0)
 
-        # dT = (500 / 1000 + 0) * 1 = 0.5 K
-        assert comp.state.T == pytest.approx(298.65)
+        # dT = (500 / 1000 + 0) * 1 = 0.5 °C
+        assert comp.state.T == pytest.approx(25.5)
 
     def test_cooling_toward_ambient(self):
         """Hot component with no loss cools toward ambient."""
-        comp = _MockComponent(T=310.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp])
+        comp = _MockComponent(T=37.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp])
 
         model.step(dt=1.0)
 
-        # dT = (0 + (298.15 - 310) / (1 * 1000)) * 1 = -0.01185 K
-        assert comp.state.T < 310.0
-        assert comp.state.T > 298.15
-        assert comp.state.T == pytest.approx(310.0 - 11.85 / 1000)
+        # dT = (0 + (25.0 - 37.0) / (1 * 1000)) * 1 = -0.012 °C
+        assert comp.state.T < 37.0
+        assert comp.state.T > 25.0
+        assert comp.state.T == pytest.approx(37.0 - 12.0 / 1000)
 
     def test_warming_toward_ambient(self):
         """Cold component with no loss warms toward ambient."""
-        comp = _MockComponent(T=280.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp])
+        comp = _MockComponent(T=7.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp])
 
         model.step(dt=1.0)
 
-        assert comp.state.T > 280.0
-        assert comp.state.T < 298.15
+        assert comp.state.T > 7.0
+        assert comp.state.T < 25.0
 
     def test_steady_state_temperature(self):
         """With constant loss, T converges to T_ambient + Q_loss * R_th."""
         Q_loss = 100.0
         R_th = 2.0
         C_th = 500.0
-        T_amb = 298.15
-        T_expected = T_amb + Q_loss * R_th  # 498.15 K
+        T_amb = 25.0
+        T_expected = T_amb + Q_loss * R_th  # 225.0 °C
 
         comp = _MockComponent(T=T_amb, loss=Q_loss, thermal_capacity=C_th, thermal_resistance=R_th)
         model = AmbientThermalModel(T_ambient=T_amb, components=[comp])
@@ -91,27 +91,27 @@ class TestAmbientThermalModelUnit:
 
     def test_multiple_components_independent(self):
         """Each component evolves independently with its own thermal properties."""
-        comp_hot = _MockComponent(T=350.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        comp_cold = _MockComponent(T=270.0, loss=0.0, thermal_capacity=2000.0, thermal_resistance=0.5)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp_hot, comp_cold])
+        comp_hot = _MockComponent(T=77.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        comp_cold = _MockComponent(T=-3.0, loss=0.0, thermal_capacity=2000.0, thermal_resistance=0.5)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp_hot, comp_cold])
 
         model.step(dt=10.0)
 
-        assert comp_hot.state.T < 350.0  # cooled
-        assert comp_cold.state.T > 270.0  # warmed
+        assert comp_hot.state.T < 77.0  # cooled
+        assert comp_cold.state.T > -3.0  # warmed
 
     def test_no_components_is_noop(self):
         """update() with no components registered does nothing."""
-        model = AmbientThermalModel(T_ambient=298.15)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.step(dt=1.0)  # should not raise
 
     def test_exact_euler_step(self):
         """Verify the forward Euler formula for one step."""
-        T_0 = 300.0
+        T_0 = 27.0
         Q = 200.0
         C = 800.0
         R = 1.5
-        T_amb = 295.0
+        T_amb = 22.0
         dt = 2.0
 
         dT_dt = Q / C + (T_amb - T_0) / (R * C)
@@ -125,13 +125,13 @@ class TestAmbientThermalModelUnit:
 
     def test_constructor_and_add_component_are_equivalent(self):
         """Passing components via constructor or add_component gives the same result."""
-        comp_a = _MockComponent(T=310.0, loss=100.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        comp_b = _MockComponent(T=310.0, loss=100.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        comp_a = _MockComponent(T=37.0, loss=100.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        comp_b = _MockComponent(T=37.0, loss=100.0, thermal_capacity=1000.0, thermal_resistance=1.0)
 
-        model_ctor = AmbientThermalModel(T_ambient=298.15, components=[comp_a])
+        model_ctor = AmbientThermalModel(T_ambient=25.0, components=[comp_a])
         model_ctor.step(dt=5.0)
 
-        model_add = AmbientThermalModel(T_ambient=298.15)
+        model_add = AmbientThermalModel(T_ambient=25.0)
         model_add.add_component(comp_b)
         model_add.step(dt=5.0)
 
@@ -144,44 +144,44 @@ class TestAmbientThermalModelUnit:
 class TestAmbientThermalModelWithBattery:
     def test_battery_heats_on_charge(self):
         """Charging creates loss which heats the battery."""
-        bat = _make_battery(T=298.15)
+        bat = _make_battery(T=25.0)
         bat.step(power_setpoint=1000.0, dt=1.0)
         assert bat.state.loss > 0
 
-        model = AmbientThermalModel(T_ambient=298.15)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.add_component(bat)
         model.step(dt=1.0)
 
-        assert bat.state.T > 298.15
+        assert bat.state.T > 25.0
 
     def test_battery_heats_on_discharge(self):
         """Discharging creates loss which heats the battery."""
-        bat = _make_battery(T=298.15)
+        bat = _make_battery(T=25.0)
         bat.step(power_setpoint=-1000.0, dt=1.0)
         assert bat.state.loss > 0
 
-        model = AmbientThermalModel(T_ambient=298.15)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.add_component(bat)
         model.step(dt=1.0)
 
-        assert bat.state.T > 298.15
+        assert bat.state.T > 25.0
 
     def test_battery_cools_at_rest(self):
         """Hot battery at rest cools toward ambient."""
-        bat = _make_battery(T=320.0)
+        bat = _make_battery(T=47.0)
         bat.step(power_setpoint=0.0, dt=1.0)
         assert bat.state.loss == 0.0
 
-        model = AmbientThermalModel(T_ambient=298.15)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.add_component(bat)
         model.step(dt=60.0)
 
-        assert bat.state.T < 320.0
+        assert bat.state.T < 47.0
 
     def test_simulation_loop(self):
         """Full simulation loop: battery.update then thermal.update each step."""
-        bat = _make_battery(T=298.15, soc=0.5)
-        model = AmbientThermalModel(T_ambient=298.15)
+        bat = _make_battery(T=25.0, soc=0.5)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.add_component(bat)
 
         temps = [bat.state.T]
@@ -196,10 +196,10 @@ class TestAmbientThermalModelWithBattery:
 
     def test_two_batteries_diverge(self):
         """Two batteries with different loads develop different temperatures."""
-        bat_high = _make_battery(T=298.15, soc=0.5)
-        bat_low = _make_battery(T=298.15, soc=0.5)
+        bat_high = _make_battery(T=25.0, soc=0.5)
+        bat_low = _make_battery(T=25.0, soc=0.5)
 
-        model = AmbientThermalModel(T_ambient=298.15)
+        model = AmbientThermalModel(T_ambient=25.0)
         model.add_component(bat_high)
         model.add_component(bat_low)
 
@@ -218,30 +218,30 @@ class TestAmbientThermalModelWithBattery:
 class TestAmbientThermalModelState:
     def test_state_initialized(self):
         """state.T_ambient is set to the constructor argument."""
-        model = AmbientThermalModel(T_ambient=295.0)
-        assert model.state.T_ambient == pytest.approx(295.0)
+        model = AmbientThermalModel(T_ambient=22.0)
+        assert model.state.T_ambient == pytest.approx(22.0)
 
     def test_T_ambient_property_reads_state(self):
         """T_ambient property returns state.T_ambient."""
-        model = AmbientThermalModel(T_ambient=300.0)
+        model = AmbientThermalModel(T_ambient=27.0)
         assert model.T_ambient == pytest.approx(model.state.T_ambient)
 
     def test_T_ambient_setter_updates_state(self):
         """Setting T_ambient via the property updates state.T_ambient."""
-        model = AmbientThermalModel(T_ambient=298.15)
-        model.T_ambient = 310.0
-        assert model.state.T_ambient == pytest.approx(310.0)
+        model = AmbientThermalModel(T_ambient=25.0)
+        model.T_ambient = 37.0
+        assert model.state.T_ambient == pytest.approx(37.0)
 
     def test_T_ambient_change_affects_cooling(self):
         """Raising T_ambient while component is below it switches direction from cooling to warming."""
-        comp = _MockComponent(T=300.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
-        model = AmbientThermalModel(T_ambient=298.15, components=[comp])
+        comp = _MockComponent(T=27.0, loss=0.0, thermal_capacity=1000.0, thermal_resistance=1.0)
+        model = AmbientThermalModel(T_ambient=25.0, components=[comp])
 
         model.step(dt=1.0)
-        assert comp.state.T < 300.0  # cooling toward 298.15
+        assert comp.state.T < 27.0  # cooling toward 25.0
 
         # raise ambient above component temperature
-        model.T_ambient = 320.0
+        model.T_ambient = 47.0
         T_before = comp.state.T
         model.step(dt=1.0)
-        assert comp.state.T > T_before  # now warming toward 320 K
+        assert comp.state.T > T_before  # now warming toward 47 °C

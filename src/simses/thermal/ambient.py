@@ -8,7 +8,7 @@ class AmbientThermalState:
     """Mutable state of a :class:`AmbientThermalModel`.
 
     Attributes:
-        T_ambient:     External ambient temperature in K.
+        T_ambient:     External ambient temperature in °C.
     """
 
     T_ambient: float
@@ -27,7 +27,7 @@ class AmbientThermalModel:
 
     Components are registered via :meth:`add_component` and must provide:
 
-    * ``state.T``             -- current temperature in K (read/written)
+    * ``state.T``             -- current temperature in °C (read/written)
     * ``state.heat``          -- total heat generation in W (read)
     * ``thermal_capacity``    -- thermal capacity in J/K (read)
     * ``thermal_resistance``  -- thermal resistance in K/W (read)
@@ -36,7 +36,7 @@ class AmbientThermalModel:
     def __init__(self, T_ambient: float, components: list | None = None) -> None:
         """
         Args:
-            T_ambient: Ambient temperature in K. May be overwritten at any
+            T_ambient: Ambient temperature in °C. May be overwritten at any
                 time via the ``T_ambient`` attribute to drive a
                 time-varying profile.
             components: Initial list of :class:`ThermalComponent` nodes.
@@ -72,7 +72,7 @@ class AmbientThermalModel:
 
     @property
     def T_ambient(self) -> float:
-        """External ambient temperature in K (convenience accessor for ``state.T_ambient``)."""
+        """External ambient temperature in °C (convenience accessor for ``state.T_ambient``)."""
         return self.state.T_ambient
 
     @T_ambient.setter

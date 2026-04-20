@@ -50,12 +50,12 @@ def _unit_box_container() -> ContainerProperties:
     )
 
 
-def _make_model(T_ambient=298.15, T_initial=298.15, tms=None, hvac=None, properties=None):
+def _make_model(T_ambient=25.0, T_initial=25.0, tms=None, hvac=None, properties=None):
     return ContainerThermalModel(
         properties=properties if properties is not None else _unit_box_container(),
         T_ambient=T_ambient,
         T_initial=T_initial,
-        tms=tms if tms is not None else ThermostatStrategy(T_setpoint=298.15, max_power=0.0),
+        tms=tms if tms is not None else ThermostatStrategy(T_setpoint=25.0, max_power=0.0),
         hvac=hvac if hvac is not None else ConstantCopHvac(),
     )
 
@@ -178,31 +178,31 @@ class TestThermostatStrategy:
 class TestContainerThermalModelUnit:
     def test_equilibrium_no_components_no_change(self):
         """All nodes at ambient, no losses → temperatures unchanged."""
-        model = _make_model(T_ambient=298.15, T_initial=298.15)
+        model = _make_model(T_ambient=25.0, T_initial=25.0)
         model.step(dt=1.0)
-        assert model.state.T_air == pytest.approx(298.15)
+        assert model.state.T_air == pytest.approx(25.0)
 
     def test_T_air_rises_with_battery_loss(self):
         """Battery generating heat raises T_air: step 1 heats battery, step 2 heat flows to air."""
-        model = _make_model(T_ambient=298.15, T_initial=298.15)
-        comp = _MockComponent(T=298.15, loss=1000.0, thermal_capacity=5000.0, thermal_resistance=0.05)
+        model = _make_model(T_ambient=25.0, T_initial=25.0)
+        comp = _MockComponent(T=25.0, loss=1000.0, thermal_capacity=5000.0, thermal_resistance=0.05)
         model.add_component(comp)
         model.step(dt=1.0)  # battery heats up; no gradient to air yet
         model.step(dt=1.0)  # now T_bat > T_air → heat flows to air
-        assert model.state.T_air > 298.15
+        assert model.state.T_air > 25.0
 
     def test_T_bat_rises_with_loss(self):
         """Battery temperature increases when loss > 0."""
-        model = _make_model(T_ambient=298.15, T_initial=298.15)
-        comp = _MockComponent(T=298.15, loss=500.0, thermal_capacity=5000.0, thermal_resistance=0.1)
+        model = _make_model(T_ambient=25.0, T_initial=25.0)
+        comp = _MockComponent(T=25.0, loss=500.0, thermal_capacity=5000.0, thermal_resistance=0.1)
         model.add_component(comp)
         model.step(dt=1.0)
-        assert comp.state.T > 298.15
+        assert comp.state.T > 25.0
 
     def test_outer_wall_moves_toward_ambient(self):
         """When T_initial > T_ambient the outer wall cools toward ambient."""
-        model = _make_model(T_ambient=298.15, T_initial=350.0)
-        T_out_before = 350.0
+        model = _make_model(T_ambient=25.0, T_initial=77.0)
+        T_out_before = 77.0
         model.step(dt=1.0)
         assert model.state.T_out < T_out_before
 
@@ -215,7 +215,7 @@ class TestContainerThermalModelUnit:
         """
         from simses.model.thermal.containers import FortyFtContainer
 
-        model = _make_model(properties=FortyFtContainer, T_ambient=250.0, T_initial=350.0)
+        model = _make_model(properties=FortyFtContainer, T_ambient=-23.0, T_initial=77.0)
         T_in_before = 350.0
         for _ in range(300):
             model.step(dt=1.0)
@@ -224,30 +224,30 @@ class TestContainerThermalModelUnit:
     def test_hvac_heating_raises_T_air(self):
         """HVAC in heating mode raises T_air above the no-HVAC baseline."""
         # Start cold: T_initial well below setpoint to trigger heating immediately
-        T_sp = 298.15
+        T_sp = 25.0
         tms = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, threshold=5.0)
         hvac = ConstantCopHvac()
-        model_hvac = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
-        model_no = _make_model(T_ambient=270.0, T_initial=280.0)
+        model_hvac = _make_model(T_ambient=-3.0, T_initial=7.0, tms=tms, hvac=hvac)
+        model_no = _make_model(T_ambient=-3.0, T_initial=7.0)
         model_hvac.step(dt=10.0)
         model_no.step(dt=10.0)
         assert model_hvac.state.T_air > model_no.state.T_air
 
     def test_hvac_cooling_lowers_T_air(self):
         """HVAC in cooling mode lowers T_air below the no-HVAC baseline."""
-        T_sp = 298.15
+        T_sp = 25.0
         tms = ThermostatStrategy(T_setpoint=T_sp, max_power=10000.0, threshold=5.0)
         hvac = ConstantCopHvac()
-        model_hvac = _make_model(T_ambient=320.0, T_initial=310.0, tms=tms, hvac=hvac)
-        model_no = _make_model(T_ambient=320.0, T_initial=310.0)
+        model_hvac = _make_model(T_ambient=47.0, T_initial=37.0, tms=tms, hvac=hvac)
+        model_no = _make_model(T_ambient=47.0, T_initial=37.0)
         model_hvac.step(dt=10.0)
         model_no.step(dt=10.0)
         assert model_hvac.state.T_air < model_no.state.T_air
 
     def test_exact_euler_step_battery(self):
         """Verify forward-Euler formula for battery node temperature."""
-        T_bat0 = 310.0
-        T_air0 = 298.15
+        T_bat0 = 37.0
+        T_air0 = 25.0
         Q_loss = 200.0
         C_bat = 800.0
         R_bat = 0.1
@@ -256,7 +256,7 @@ class TestContainerThermalModelUnit:
         dT_bat = Q_loss / C_bat - (T_bat0 - T_air0) / (R_bat * C_bat)
         T_bat_expected = T_bat0 + dT_bat * dt
 
-        model = _make_model(T_ambient=298.15, T_initial=T_air0)
+        model = _make_model(T_ambient=25.0, T_initial=T_air0)
         comp = _MockComponent(T=T_bat0, loss=Q_loss, thermal_capacity=C_bat, thermal_resistance=R_bat)
         model.add_component(comp)
         model.step(dt=dt)
@@ -265,9 +265,9 @@ class TestContainerThermalModelUnit:
 
     def test_exact_euler_step_air(self):
         """Verify forward-Euler formula for air node (single battery, pre-step values)."""
-        T_bat0 = 310.0
-        T_air0 = 298.15
-        T_in0 = 298.15
+        T_bat0 = 37.0
+        T_air0 = 25.0
+        T_in0 = 25.0
         Q_loss = 200.0
         R_bat = 0.1
         dt = 1.0
@@ -285,7 +285,7 @@ class TestContainerThermalModelUnit:
         dT_air = (Q_bat_to_air + Q_in_to_air) / C_air
         T_air_expected = T_air0 + dT_air * dt
 
-        model = _make_model(properties=props, T_ambient=298.15, T_initial=T_air0)
+        model = _make_model(properties=props, T_ambient=25.0, T_initial=T_air0)
         comp = _MockComponent(T=T_bat0, loss=Q_loss, thermal_capacity=5000.0, thermal_resistance=R_bat)
         model.add_component(comp)
         model.step(dt=dt)
@@ -303,7 +303,7 @@ class TestContainerThermalModelIntegration:
         Uses FortyFtContainer and dt=1 s to stay within the explicit-Euler stability
         limit (τ_air ≈ 21 s for a 40-ft container).
         """
-        bat = _make_battery(T=298.15, soc=0.5)
+        bat = _make_battery(T=25.0, soc=0.5)
         model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
 
@@ -311,12 +311,12 @@ class TestContainerThermalModelIntegration:
             bat.step(power_setpoint=500.0, dt=1.0)
             model.step(dt=1.0)
 
-        assert bat.state.T > 298.15
-        assert model.state.T_air > 298.15
+        assert bat.state.T > 25.0
+        assert model.state.T_air > 25.0
 
     def test_hot_battery_at_rest_cools_toward_air(self):
         """Hot battery with no power input cools toward T_air."""
-        bat = _make_battery(T=320.0, soc=0.5)
+        bat = _make_battery(T=47.0, soc=0.5)
         model = _make_model()
         model.add_component(bat)
 
@@ -327,7 +327,7 @@ class TestContainerThermalModelIntegration:
         assert bat.state.T < T_bat_before
 
     def test_forty_ft_container_runs_without_error(self):
-        bat = _make_battery(T=298.15, soc=0.5)
+        bat = _make_battery(T=25.0, soc=0.5)
         model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
         for _ in range(5):
@@ -335,7 +335,7 @@ class TestContainerThermalModelIntegration:
             model.step(dt=60.0)
 
     def test_twenty_ft_container_runs_without_error(self):
-        bat = _make_battery(T=298.15, soc=0.5)
+        bat = _make_battery(T=25.0, soc=0.5)
         model = _make_model(properties=TwentyFtContainer)
         model.add_component(bat)
         for _ in range(5):
@@ -343,8 +343,8 @@ class TestContainerThermalModelIntegration:
             model.step(dt=60.0)
 
     def test_100_steps_physical_temperature_bounds(self):
-        """Over 100 steps at dt=1 s, all temperatures remain physically plausible (200–400 K)."""
-        bat = _make_battery(T=298.15, soc=0.5)
+        """Over 100 steps at dt=1 s, all temperatures remain physically plausible (-100–200 °C)."""
+        bat = _make_battery(T=25.0, soc=0.5)
         model = _make_model(properties=FortyFtContainer)
         model.add_component(bat)
 
@@ -352,11 +352,11 @@ class TestContainerThermalModelIntegration:
             bat.step(power_setpoint=200.0, dt=1.0)
             model.step(dt=1.0)
 
-        assert 200.0 < bat.state.T < 400.0
-        assert 200.0 < model.state.T_air < 400.0
-        assert 200.0 < model.state.T_in < 400.0
-        assert 200.0 < model.state.T_mid < 400.0
-        assert 200.0 < model.state.T_out < 400.0
+        assert -100 < bat.state.T < 200
+        assert -100 < model.state.T_air < 200
+        assert -100 < model.state.T_in < 200
+        assert -100 < model.state.T_mid < 200
+        assert -100 < model.state.T_out < 200
 
 
 # ===================================================================
@@ -403,37 +403,37 @@ class TestContainerThermalModelPowerEl:
 
     def test_power_el_zero_when_hvac_idle(self):
         """HVAC within dead-band → power_el stays 0."""
-        tms = ThermostatStrategy(T_setpoint=298.15, max_power=5000.0, threshold=5.0)
+        tms = ThermostatStrategy(T_setpoint=25.0, max_power=5000.0, threshold=5.0)
         hvac = ConstantCopHvac()
-        model = _make_model(T_ambient=298.15, T_initial=298.15, tms=tms, hvac=hvac)
+        model = _make_model(T_ambient=25.0, T_initial=25.0, tms=tms, hvac=hvac)
         model.step(dt=1.0)
         assert model.state.power_el == pytest.approx(0.0)
 
     def test_power_el_positive_when_heating(self):
         """HVAC in heating mode → model.state.power_el > 0."""
         cop_h = 2.5
-        tms = ThermostatStrategy(T_setpoint=300.0, max_power=5000.0, threshold=5.0)
+        tms = ThermostatStrategy(T_setpoint=27.0, max_power=5000.0, threshold=5.0)
         hvac = ConstantCopHvac(cop_heating=cop_h)
         # T_initial well below setpoint − threshold → heating triggered immediately
-        model = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
+        model = _make_model(T_ambient=-3.0, T_initial=7.0, tms=tms, hvac=hvac)
         model.step(dt=1.0)
         assert model.state.power_el == pytest.approx(5000.0 / cop_h)
 
     def test_power_el_positive_when_cooling(self):
         """HVAC in cooling mode → model.state.power_el > 0."""
         cop_c = 3.0
-        tms = ThermostatStrategy(T_setpoint=298.15, max_power=5000.0, threshold=5.0)
+        tms = ThermostatStrategy(T_setpoint=25.0, max_power=5000.0, threshold=5.0)
         hvac = ConstantCopHvac(cop_cooling=cop_c)
         # T_initial well above setpoint + threshold → cooling triggered immediately
-        model = _make_model(T_ambient=320.0, T_initial=310.0, tms=tms, hvac=hvac)
+        model = _make_model(T_ambient=47.0, T_initial=37.0, tms=tms, hvac=hvac)
         model.step(dt=1.0)
         assert model.state.power_el == pytest.approx(5000.0 / cop_c)
 
     def test_power_el_reflects_hvac_consumption(self):
         """model.state.power_el reflects the HVAC electrical consumption."""
         cop_h = 2.5
-        tms = ThermostatStrategy(T_setpoint=300.0, max_power=4000.0, threshold=5.0)
+        tms = ThermostatStrategy(T_setpoint=27.0, max_power=4000.0, threshold=5.0)
         hvac = ConstantCopHvac(cop_heating=cop_h)
-        model = _make_model(T_ambient=270.0, T_initial=280.0, tms=tms, hvac=hvac)
+        model = _make_model(T_ambient=-3.0, T_initial=7.0, tms=tms, hvac=hvac)
         model.step(dt=1.0)
         assert model.state.power_el == pytest.approx(4000.0 / cop_h)

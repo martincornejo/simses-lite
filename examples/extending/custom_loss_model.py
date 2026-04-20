@@ -91,7 +91,7 @@ def simulate(dt: float = 60.0) -> pd.DataFrame:
     battery = Battery(
         cell=SonyLFP(),
         circuit=(13, 10),  # 30 Ah, ~42 V nominal — sized so the converter never saturates
-        initial_states={"start_soc": 0.5, "start_T": 298.15},
+        initial_states={"start_soc": 0.5, "start_T": 25.0},
     )
     max_power = 1500.0
     converter = Converter(

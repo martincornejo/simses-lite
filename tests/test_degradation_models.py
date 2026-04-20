@@ -18,7 +18,7 @@ from simses.model.degradation.sony_lfp_cyclic import SonyLFPCyclicDegradation
 # ---------------------------------------------------------------------------
 # State helpers
 # ---------------------------------------------------------------------------
-def _make_state(soc: float = 0.5, T: float = 298.15) -> BatteryState:
+def _make_state(soc: float = 0.5, T: float = 25.0) -> BatteryState:
     return BatteryState(
         v=3.6,
         i=0,
@@ -164,8 +164,8 @@ class TestSonyLFPCalendar:
         """Higher temperature should accelerate calendar aging."""
         model_cold = SonyLFPCalendarDegradation()
         model_hot = SonyLFPCalendarDegradation()
-        state_cold = _make_state(T=278.15)  # 5 C
-        state_hot = _make_state(T=318.15)  # 45 C
+        state_cold = _make_state(T=5.0)  # 5 °C
+        state_hot = _make_state(T=45.0)  # 45 °C
         dq_cold = model_cold.update_capacity(state_cold, dt=86400.0, accumulated_qloss=0.0)
         dq_hot = model_hot.update_capacity(state_hot, dt=86400.0, accumulated_qloss=0.0)
         assert dq_hot > dq_cold  # more positive = more degradation
@@ -174,8 +174,8 @@ class TestSonyLFPCalendar:
         """Higher temperature should also increase resistance more."""
         model_cold = SonyLFPCalendarDegradation()
         model_hot = SonyLFPCalendarDegradation()
-        state_cold = _make_state(T=278.15)
-        state_hot = _make_state(T=318.15)
+        state_cold = _make_state(T=5.0)
+        state_hot = _make_state(T=45.0)
         dr_cold = model_cold.update_resistance(state_cold, dt=86400.0)
         dr_hot = model_hot.update_resistance(state_hot, dt=86400.0)
         assert dr_hot > dr_cold

@@ -34,8 +34,8 @@ class ToyLTO(CellType):
                 max_discharge_rate=4.0,  # 1/h
             ),
             thermal=ThermalCellProperties(
-                min_temperature=253.15,  # K  (−20 °C)
-                max_temperature=333.15,  # K  (+60 °C)
+                min_temperature=-20.0,  # °C
+                max_temperature=60.0,  # °C
                 mass=1.0,  # kg per cell
                 specific_heat=1000.0,  # J/kgK
                 convection_coefficient=10.0,  # W/m²K
@@ -66,7 +66,7 @@ def simulate(n_steps: int = 60, dt: float = 60.0) -> pd.DataFrame:
     battery = Battery(
         cell=ToyLTO(),
         circuit=(24, 1),  # 24 cells in series ≈ 55 V nominal
-        initial_states={"start_soc": 0.7, "start_T": 298.15},
+        initial_states={"start_soc": 0.7, "start_T": 25.0},
     )
 
     log: dict[str, list[float]] = {"soc": [], "v": [], "i": [], "power": []}

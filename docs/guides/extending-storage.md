@@ -26,7 +26,7 @@ To register a storage as a thermal node with [`AmbientThermalModel`][simses.ther
 
 | Member | Direction | Meaning |
 |---|---|---|
-| `state.T` | read / written | Component temperature in K. |
+| `state.T` | read / written | Component temperature in °C. |
 | `state.heat` | read | Internal heat generation in W (+ = heats the component). |
 | `thermal_capacity` | read | Lumped thermal capacity in J/K. |
 | `thermal_resistance` | read | Thermal resistance to the surrounding air / ambient in K/W. |
@@ -62,7 +62,7 @@ class CapacitorState:
     power_setpoint: float = 0.0
     loss: float = 0.0
     heat: float = 0.0   # ← required by ThermalComponent
-    T: float = 298.15   # ← required by ThermalComponent
+    T: float = 25.0     # ← required by ThermalComponent
 ```
 
 Storage class:
@@ -74,7 +74,7 @@ import math
 class Capacitor:
     def __init__(self, capacitance, esr, initial_voltage, *,
                  mass=1.0, specific_heat=1000.0, thermal_resistance=1.0,
-                 initial_T=298.15):
+                 initial_T=25.0):
         self.capacitance = capacitance
         self.esr = esr
         self.mass = mass
@@ -142,7 +142,7 @@ If you implemented the four `ThermalComponent` members, register the storage lik
 ```python
 from simses.thermal import AmbientThermalModel
 
-ambient = AmbientThermalModel(T_ambient=298.15)
+ambient = AmbientThermalModel(T_ambient=25.0)
 ambient.add_component(capacitor)
 
 for _ in range(n_steps):
