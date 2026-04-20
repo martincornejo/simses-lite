@@ -39,6 +39,9 @@ docs = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data] 
+"simses" = ["**/*.csv"] 
+
 [tool.pytest.ini_options]
 # Make `examples/` importable in tests so example scripts can be used
 # as smoke tests (e.g. `from examples.logging import simulate`).
