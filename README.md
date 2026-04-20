@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/simses)](https://pypi.org/project/simses/)
 [![Python](https://img.shields.io/pypi/pyversions/simses)](https://pypi.org/project/simses/)
 [![CI](https://github.com/tum-ees/simses/actions/workflows/ci.yml/badge.svg)](https://github.com/tum-ees/simses/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://tum-ees.github.io/simses/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/pypi/l/simses)](LICENSE)
 
@@ -13,6 +14,8 @@ techno-economic analysis.
 
 It is designed to be simple, modular, and composable: a lightweight core that is easy to read,
 extend, and integrate into your own simulations.
+
+Full documentation: [tum-ees.github.io/simses](https://tum-ees.github.io/simses/).
 
 ## Installation
 
