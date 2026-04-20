@@ -10,8 +10,12 @@ from dataclasses import dataclass
 
 import pytest
 
+from simses.model.converter.bonfiglioli import BonfiglioliTL4Q, BonfiglioliTL4QFieldData
 from simses.model.converter.fix_efficiency import FixedEfficiency
+from simses.model.converter.notton import NottonType1, NottonType2
+from simses.model.converter.rampinelli import Rampinelli
 from simses.model.converter.sinamics import SinamicsS120, SinamicsS120Fit
+from simses.model.converter.sungrow import SungrowSC1000TL
 
 
 # ---------------------------------------------------------------------------
@@ -33,6 +37,30 @@ CONVERTER_SPECS: list[ConverterModelSpec] = [
     ConverterModelSpec(
         name="FixedEfficiency_Asymmetric",
         factory=lambda: FixedEfficiency((0.96, 0.94)),
+    ),
+    ConverterModelSpec(
+        name="NottonType2",
+        factory=NottonType2,
+    ),
+    ConverterModelSpec(
+        name="NottonType1",
+        factory=NottonType1,
+    ),
+    ConverterModelSpec(
+        name="Rampinelli",
+        factory=lambda: Rampinelli(0.003407887, 0.013809826, 0.003155305),
+    ),
+    ConverterModelSpec(
+        name="BonfiglioliTL4Q",
+        factory=BonfiglioliTL4Q,
+    ),
+    ConverterModelSpec(
+        name="BonfiglioliTL4QFieldData",
+        factory=BonfiglioliTL4QFieldData,
+    ),
+    ConverterModelSpec(
+        name="SungrowSC1000TL",
+        factory=SungrowSC1000TL,
     ),
     ConverterModelSpec(
         name="SinamicsS120",

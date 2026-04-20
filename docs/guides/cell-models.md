@@ -13,7 +13,7 @@ All values are per cell, taken directly from the model constructors.
 
 ## `SonyLFP`
 
-A small-format cylindrical LFP cell (Sony/Murata US26650FTC1) with a flat OCV plateau, strong cycle life, and a notably asymmetric C-rate (1.0 charge, 6.6 discharge). OCV, hysteresis, and the entropic coefficient are 1-D lookups in SOC; internal resistance is a 2-D lookup over (SOC, T) with separate charge and discharge tables. This is the only cell in the library that ships a default degradation pair — [Naumann 2018 calendar](https://doi.org/10.1016/j.est.2018.01.019) and [Naumann 2020 cyclic](https://doi.org/10.1016/j.jpowsour.2019.227666) — so multi-year stationary-storage runs with aging work out of the box.
+A small-format cylindrical LFP cell (Sony/Murata US26650FTC1) with a flat OCV plateau, strong cycle life, and a notably asymmetric C-rate (1.0 charge, 6.6 discharge). OCV, hysteresis, and the entropic coefficient are 1-D lookups in SOC; internal resistance is a 2-D lookup over (SOC, T) with separate charge and discharge tables. Ships a default degradation pair — [Naumann 2018 calendar](https://doi.org/10.1016/j.est.2018.01.019) and [Naumann 2020 cyclic](https://doi.org/10.1016/j.jpowsour.2019.227666) — so multi-year stationary-storage runs with aging work out of the box.
 
 Additional source: Naumann, M. *Techno-economic evaluation of stationary lithium-ion energy storage systems with special consideration of aging*. PhD Thesis, Technical University Munich, 2018.
 
@@ -58,4 +58,4 @@ Writing a new cell model means subclassing `CellType` and implementing `open_cir
 
 - [Battery concept](../concepts/battery.md) — how `CellType` composes into `Battery` and scales to pack level.
 - [`CellType` API reference](../api/battery.md#cell-interface).
-- [Models API reference](../api/models.md) — the `SonyLFP` and `Samsung94AhNMC` classes.
+- [Models API reference](../api/models.md) — the shipped cell classes.
