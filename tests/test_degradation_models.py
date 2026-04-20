@@ -11,6 +11,8 @@ import pytest
 
 from simses.battery.state import BatteryState
 from simses.degradation.cycle_detector import HalfCycle
+from simses.model.degradation.molicel_nmc_calendar import MolicelNMCCalendarDegradation
+from simses.model.degradation.molicel_nmc_cyclic import MolicelNMCCyclicDegradation
 from simses.model.degradation.sony_lfp_calendar import SonyLFPCalendarDegradation
 from simses.model.degradation.sony_lfp_cyclic import SonyLFPCyclicDegradation
 
@@ -59,6 +61,7 @@ class CalendarModelSpec:
 
 
 CALENDAR_SPECS = [
+    CalendarModelSpec(name="MolicelNMCCalendar", factory=MolicelNMCCalendarDegradation),
     CalendarModelSpec(name="SonyLFPCalendar", factory=SonyLFPCalendarDegradation),
 ]
 
@@ -70,6 +73,7 @@ class CyclicModelSpec:
 
 
 CYCLIC_SPECS = [
+    CyclicModelSpec(name="MolicelNMCCyclic", factory=MolicelNMCCyclicDegradation),
     CyclicModelSpec(name="SonyLFPCyclic", factory=SonyLFPCyclicDegradation),
 ]
 

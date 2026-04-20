@@ -6,7 +6,11 @@ import pandas as pd
 from simses.battery.battery import BatteryState, CellType
 from simses.battery.format import RoundCell
 from simses.battery.properties import ElectricalCellProperties, ThermalCellProperties
+from simses.degradation import DegradationModel
+from simses.degradation.state import DegradationState
 from simses.interpolation import interp1d_scalar
+from simses.model.degradation.molicel_nmc_calendar import MolicelNMCCalendarDegradation
+from simses.model.degradation.molicel_nmc_cyclic import MolicelNMCCyclicDegradation
 
 
 class MolicelNMC(CellType):
@@ -16,7 +20,12 @@ class MolicelNMC(CellType):
     nominal voltage. Analytical ``OCV(SOC)`` as a sum of sigmoids and a
     linear term; internal resistance is a 1-D lookup in SOC (the source
     characterisation is symmetric for charge and discharge and
-    temperature-independent in the tested range).
+    temperature-independent in the tested range). Ships a default
+    degradation model
+    (:class:`~simses.model.degradation.molicel_nmc_calendar.MolicelNMCCalendarDegradation`
+    + :class:`~simses.model.degradation.molicel_nmc_cyclic.MolicelNMCCyclicDegradation`)
+    that :class:`~simses.battery.battery.Battery` picks up when constructed
+    with ``degradation=True``.
 
     Source: Schuster, S. F., Bach, T., Fleder, E., Müller, J., Brand, M.,
     Sextl, G., & Jossen, A. (2015). *Nonlinear aging characteristics of
@@ -78,3 +87,16 @@ class MolicelNMC(CellType):
 
     def internal_resistance(self, state: BatteryState) -> float:
         return interp1d_scalar(state.soc, self._rint_lut_soc, self._rint_lut_rint)
+
+    @classmethod
+    def default_degradation_model(
+        cls,
+        initial_soc: float,
+        initial_state: DegradationState | None = None,
+    ) -> DegradationModel:
+        return DegradationModel(
+            calendar=MolicelNMCCalendarDegradation(),
+            cyclic=MolicelNMCCyclicDegradation(),
+            initial_soc=initial_soc,
+            initial_state=initial_state,
+        )
