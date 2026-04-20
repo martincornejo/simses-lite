@@ -3,7 +3,7 @@
 How to implement a new cell chemistry as a `CellType` subclass, drop it into a `Battery`, and plug it into the existing test harness.
 
 !!! info "Who this is for"
-    Researchers or engineers who want to simulate a cell not covered by the shipped models (`SonyLFP`, `MolicelNMC`, `PanasonicNCA`, `Samsung94AhNMC`). If you just need to pick between the existing models, see [Choosing a Cell Model](cell-models.md) instead. For the architectural picture of how `CellType` and `Battery` interact, see [Battery concept](../concepts/battery.md#battery-and-celltype).
+    Researchers or engineers who want to simulate a cell not covered by the shipped models (`SonyLFP`, `Samsung94AhNMC`). If you just need to pick between the existing models, see [Choosing a Cell Model](cell-models.md) instead. For the architectural picture of how `CellType` and `Battery` interact, see [Battery concept](../concepts/battery.md#battery-and-celltype).
 
 ## The contract
 

@@ -8,14 +8,6 @@ Concrete implementations of cell, converter, degradation, and thermal models.
 
 ::: simses.model.cell.sony_lfp.SonyLFP
 
-### MolicelNMC
-
-::: simses.model.cell.molicel_nmc.MolicelNMC
-
-### PanasonicNCA
-
-::: simses.model.cell.panasonic_nca.PanasonicNCA
-
 ### Samsung94AhNMC
 
 ::: simses.model.cell.samsung94Ah_nmc.Samsung94AhNMC
@@ -79,14 +71,6 @@ Concrete implementations of cell, converter, degradation, and thermal models.
 ### SonyLFP Cyclic Degradation
 
 ::: simses.model.degradation.sony_lfp_cyclic.SonyLFPCyclicDegradation
-
-### MolicelNMC Calendar Degradation
-
-::: simses.model.degradation.molicel_nmc_calendar.MolicelNMCCalendarDegradation
-
-### MolicelNMC Cyclic Degradation
-
-::: simses.model.degradation.molicel_nmc_cyclic.MolicelNMCCyclicDegradation
 
 ## Thermal Container Presets
 
