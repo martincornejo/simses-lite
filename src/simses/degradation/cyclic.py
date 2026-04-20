@@ -29,12 +29,15 @@ class CyclicDegradation(Protocol):
         """
         ...
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
         """Compute incremental cyclic resistance increase for a completed half-cycle.
 
         Args:
             state: Current battery state.
             half_cycle: Stress factors of the completed half-cycle.
+            accumulated_rinc: Cyclic resistance increase accumulated so far
+                (p.u., positive), used to seed virtual-FEC continuation.
+                Memoryless laws (e.g. linear-in-FEC) can ignore it.
 
         Returns:
             delta_soh_R — positive increment in p.u. (resistance increases).

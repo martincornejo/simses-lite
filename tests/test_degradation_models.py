@@ -110,14 +110,14 @@ class TestCalendarModel:
     def test_delta_soh_r_positive(self, cal_model):
         """Calendar aging should increase resistance (delta_soh_R > 0)."""
         state = _make_state()
-        dr = cal_model.update_resistance(state, dt=3600.0)
+        dr = cal_model.update_resistance(state, dt=3600.0, accumulated_rinc=0.0)
         assert dr > 0
 
     def test_zero_dt_zero_change(self, cal_model):
         """Zero timestep should produce zero degradation."""
         state = _make_state()
         assert cal_model.update_capacity(state, dt=0.0, accumulated_qloss=0.0) == 0.0
-        assert cal_model.update_resistance(state, dt=0.0) == 0.0
+        assert cal_model.update_resistance(state, dt=0.0, accumulated_rinc=0.0) == 0.0
 
     def test_longer_time_more_degradation(self, cal_model):
         """More time should produce more capacity loss."""
@@ -145,7 +145,7 @@ class TestCyclicModel:
         """Cyclic aging should increase resistance (delta_soh_R > 0)."""
         state = _make_state()
         hc = _make_half_cycle()
-        dr = cyc_model.update_resistance(state, hc)
+        dr = cyc_model.update_resistance(state, hc, accumulated_rinc=0.0)
         assert dr > 0
 
     def test_zero_fec_zero_change(self, cyc_model):
@@ -153,7 +153,7 @@ class TestCyclicModel:
         state = _make_state()
         hc = HalfCycle(depth_of_discharge=0.0, mean_soc=0.5, c_rate=0.5, full_equivalent_cycles=0.0)
         assert cyc_model.update_capacity(state, hc, accumulated_qloss=0.0) == 0.0
-        assert cyc_model.update_resistance(state, hc) == 0.0
+        assert cyc_model.update_resistance(state, hc, accumulated_rinc=0.0) == 0.0
 
 
 # ===================================================================
@@ -176,8 +176,8 @@ class TestSonyLFPCalendar:
         model_hot = SonyLFPCalendarDegradation()
         state_cold = _make_state(T=5.0)
         state_hot = _make_state(T=45.0)
-        dr_cold = model_cold.update_resistance(state_cold, dt=86400.0)
-        dr_hot = model_hot.update_resistance(state_hot, dt=86400.0)
+        dr_cold = model_cold.update_resistance(state_cold, dt=86400.0, accumulated_rinc=0.0)
+        dr_hot = model_hot.update_resistance(state_hot, dt=86400.0, accumulated_rinc=0.0)
         assert dr_hot > dr_cold
 
     def test_sqrt_time_behavior(self):
@@ -199,17 +199,20 @@ class TestSonyLFPCalendar:
 
         total_time = 86400.0  # 1 day
         dq_single = model.update_capacity(state, dt=total_time, accumulated_qloss=0.0)
-        dr_single = model.update_resistance(state, dt=total_time)
+        dr_single = model.update_resistance(state, dt=total_time, accumulated_rinc=0.0)
 
         n_steps = 100
         accumulated_qloss = 0.0
+        accumulated_rinc = 0.0
         dq_total = 0.0
         dr_total = 0.0
         for _ in range(n_steps):
             dq = model.update_capacity(state, dt=total_time / n_steps, accumulated_qloss=accumulated_qloss)
             accumulated_qloss += dq
             dq_total += dq
-            dr_total += model.update_resistance(state, dt=total_time / n_steps)
+            dr = model.update_resistance(state, dt=total_time / n_steps, accumulated_rinc=accumulated_rinc)
+            accumulated_rinc += dr
+            dr_total += dr
 
         assert dq_total == pytest.approx(dq_single, rel=0.02)
         assert dr_total == pytest.approx(dr_single, rel=0.02)
@@ -258,10 +261,11 @@ class TestSonyLFPCyclic:
         total_fec = 1.0
         hc_single = HalfCycle(depth_of_discharge=0.5, mean_soc=0.5, c_rate=0.5, full_equivalent_cycles=total_fec)
         dq_single = model.update_capacity(state, hc_single, accumulated_qloss=0.0)
-        dr_single = model.update_resistance(state, hc_single)
+        dr_single = model.update_resistance(state, hc_single, accumulated_rinc=0.0)
 
         n_steps = 100
         accumulated_qloss = 0.0
+        accumulated_rinc = 0.0
         dq_total = 0.0
         dr_total = 0.0
         for _ in range(n_steps):
@@ -274,7 +278,9 @@ class TestSonyLFPCyclic:
             dq = model.update_capacity(state, hc, accumulated_qloss=accumulated_qloss)
             accumulated_qloss += dq
             dq_total += dq
-            dr_total += model.update_resistance(state, hc)
+            dr = model.update_resistance(state, hc, accumulated_rinc=accumulated_rinc)
+            accumulated_rinc += dr
+            dr_total += dr
 
         assert dq_total == pytest.approx(dq_single, rel=0.02)
         assert dr_total == pytest.approx(dr_single, rel=0.02)

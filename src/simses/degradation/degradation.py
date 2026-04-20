@@ -11,7 +11,7 @@ class _NoOpCalendar:
     def update_capacity(self, state: BatteryState, dt: float, accumulated_qloss: float) -> float:
         return 0.0
 
-    def update_resistance(self, state: BatteryState, dt: float) -> float:
+    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
         return 0.0
 
 
@@ -21,7 +21,7 @@ class _NoOpCyclic:
     def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         return 0.0
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
         return 0.0
 
 
@@ -86,7 +86,7 @@ class DegradationModel:
         """
         # Calendar aging
         dq_cal = self.calendar.update_capacity(state, dt, self.state.qloss_cal)
-        dr_cal = self.calendar.update_resistance(state, dt)
+        dr_cal = self.calendar.update_resistance(state, dt, self.state.rinc_cal)
         self.state.qloss_cal += dq_cal
         self.state.rinc_cal += dr_cal
         state.soh_Q -= dq_cal
@@ -96,7 +96,7 @@ class DegradationModel:
         if self.cycle_detector.step(state.soc, dt):
             half_cycle = self.cycle_detector.last_cycle
             dq_cyc = self.cyclic.update_capacity(state, half_cycle, self.state.qloss_cyc)
-            dr_cyc = self.cyclic.update_resistance(state, half_cycle)
+            dr_cyc = self.cyclic.update_resistance(state, half_cycle, self.state.rinc_cyc)
             self.state.qloss_cyc += dq_cyc
             self.state.rinc_cyc += dr_cyc
             state.soh_Q -= dq_cyc

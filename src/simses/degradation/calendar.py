@@ -28,12 +28,15 @@ class CalendarDegradation(Protocol):
         """
         ...
 
-    def update_resistance(self, state: BatteryState, dt: float) -> float:
+    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
         """Compute incremental calendar resistance increase.
 
         Args:
             state: Current battery state.
             dt: Timestep in seconds.
+            accumulated_rinc: Calendar resistance increase accumulated so far
+                (p.u., positive), used to seed virtual-time continuation.
+                Memoryless laws (e.g. linear-in-time) can ignore it.
 
         Returns:
             delta_soh_R — positive increment in p.u. (resistance increases).

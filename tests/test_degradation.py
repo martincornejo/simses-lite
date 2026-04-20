@@ -26,7 +26,7 @@ class MockCalendar(CalendarDegradation):
         self.call_count += 1
         return self.dq
 
-    def update_resistance(self, state: BatteryState, dt: float) -> float:
+    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
         return self.dr
 
 
@@ -42,7 +42,7 @@ class MockCyclic(CyclicDegradation):
         self.call_count += 1
         return self.dq
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
         return self.dr
 
 
