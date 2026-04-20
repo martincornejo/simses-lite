@@ -51,8 +51,7 @@ class SonyLFPCyclicDegradation(CyclicDegradation):
 
         return delta_q
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
-        # accumulated_rinc is unused: this model is linear-in-FEC, no virtual-FEC needed.
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
         delta_fec = half_cycle.full_equivalent_cycles
         if delta_fec == 0.0:
             return 0.0

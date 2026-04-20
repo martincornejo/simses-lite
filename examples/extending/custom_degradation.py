@@ -61,8 +61,8 @@ class SqrtTimeCalendar:
         t_virt = (accumulated_qloss / stress) ** 2
         return stress * math.sqrt(t_virt + dt) - accumulated_qloss
 
-    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
-        """Resistance rise — linear in time, simple memoryless model (``accumulated_rinc`` unused)."""
+    def update_resistance(self, state: BatteryState, dt: float) -> float:
+        """Resistance rise — linear in time, simple memoryless model."""
         return 1e-8 * self._stress(state.T) / self.K_REF * dt
 
 
@@ -83,7 +83,7 @@ class DodSquaredCyclic:
     def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         return self.K_CYC * half_cycle.depth_of_discharge**2 * half_cycle.full_equivalent_cycles
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
         return self.K_RINC * half_cycle.depth_of_discharge**2 * half_cycle.full_equivalent_cycles
 
 

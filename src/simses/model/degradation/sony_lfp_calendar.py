@@ -56,8 +56,7 @@ class SonyLFPCalendarDegradation(CalendarDegradation):
 
         return delta_q
 
-    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
-        # accumulated_rinc is unused: this model is linear-in-time, no virtual-time needed.
+    def update_resistance(self, state: BatteryState, dt: float) -> float:
         if dt == 0.0:
             return 0.0
 

@@ -15,12 +15,12 @@ Fires **every timestep** — even when the battery is idle.
 
 ```python
 def update_capacity(self, state: BatteryState, dt: float, accumulated_qloss: float) -> float: ...
-def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float: ...
+def update_resistance(self, state: BatteryState, dt: float) -> float: ...
 ```
 
 - `state` — current battery state (read SOC, T, etc.).
 - `dt` — timestep in seconds.
-- `accumulated_qloss` / `accumulated_rinc` — calendar capacity loss and resistance increase accumulated so far (p.u., ≥ 0). Your model reads these to continue a non-linear aging law under varying stress; memoryless laws (linear in time) can ignore them.
+- `accumulated_qloss` — calendar capacity loss accumulated so far (p.u., ≥ 0). Your model reads this to continue a non-linear aging law under varying stress; memoryless laws can ignore it.
 - Returns a **non-negative delta** — never an absolute value.
 
 ### `CyclicDegradation`
@@ -29,16 +29,16 @@ Fires **only on completed half-cycles** — `DegradationModel` delegates to the 
 
 ```python
 def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float: ...
-def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float: ...
+def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float: ...
 ```
 
 - `half_cycle` — a [`HalfCycle`][simses.degradation.cycle_detector.HalfCycle] carrying `depth_of_discharge`, `mean_soc`, `c_rate`, and `full_equivalent_cycles`.
-- Same accumulator pattern on both sides — virtual-FEC continuation available when the law is non-linear in throughput.
+- Same `accumulated_qloss` pattern on the capacity side.
 - Same delta-only return convention.
 
 ### The statelessness rule
 
-Both sub-models must be **stateless**. All accumulators live on the [`DegradationState`][simses.degradation.state.DegradationState] that `DegradationModel` owns. The framework passes `accumulated_qloss` into `update_capacity` and `accumulated_rinc` into `update_resistance` so your model can reconstruct history without storing anything internally. Memoryless laws (linear-in-time calendar R rise, linear-in-FEC cyclic R rise) are free to ignore the accumulator.
+Both sub-models must be **stateless**. All accumulators live on the [`DegradationState`][simses.degradation.state.DegradationState] that `DegradationModel` owns. The framework passes `accumulated_qloss` into `update_capacity` so your model can reconstruct history without storing anything internally; resistance rise doesn't accumulate the same way (most rise laws are memoryless in their independent variable).
 
 This rule keeps checkpointing, warm-starts, and sub-model swapping trivial — the only state lives in one place.
 
@@ -68,11 +68,11 @@ class SqrtTimeCalendar:
         t_virt = (accumulated_qloss / stress) ** 2
         return stress * math.sqrt(t_virt + dt) - accumulated_qloss
 
-    def update_resistance(self, state: BatteryState, dt: float, accumulated_rinc: float) -> float:
+    def update_resistance(self, state: BatteryState, dt: float) -> float:
         return 1e-8 * self._stress(state.T) / self.K_REF * dt
 ```
 
-The capacity method inverts the √t law at each call to find the *virtual* time that would have produced `accumulated_qloss` under the *current* stress, then steps forward — so T can change between steps without double-counting. If your law is linear in time (`dq = k · dt`), just ignore the accumulator and return `k(state) · dt`. If it follows a different exponent (`t^0.75`, SEI double-exponential, etc.), apply the same inversion principle with the right formula. The same principle applies to `update_resistance` via `accumulated_rinc` when the R-rise law is non-linear in time.
+The capacity method inverts the √t law at each call to find the *virtual* time that would have produced `accumulated_qloss` under the *current* stress, then steps forward — so T can change between steps without double-counting. If your law is linear in time (`dq = k · dt`), just ignore `accumulated_qloss` and return `k(state) · dt`. If it follows a different exponent (`t^0.75`, SEI double-exponential, etc.), apply the same inversion principle with the right formula.
 
 **Cyclic** — `Δq_cyc = K_CYC · DoD² · ΔFEC` per completed half-cycle, no memory across cycles:
 
@@ -87,7 +87,7 @@ class DodSquaredCyclic:
     def update_capacity(self, state: BatteryState, half_cycle: HalfCycle, accumulated_qloss: float) -> float:
         return self.K_CYC * half_cycle.depth_of_discharge**2 * half_cycle.full_equivalent_cycles
 
-    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle, accumulated_rinc: float) -> float:
+    def update_resistance(self, state: BatteryState, half_cycle: HalfCycle) -> float:
         return self.K_RINC * half_cycle.depth_of_discharge**2 * half_cycle.full_equivalent_cycles
 ```
 
