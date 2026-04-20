@@ -30,13 +30,37 @@ Concrete implementations of cell, converter, degradation, and thermal models.
 
 ::: simses.model.converter.notton.Notton
 
-### Bonfiglioli
+### AsymmetricNotton
 
-::: simses.model.converter.bonfiglioli.Bonfiglioli
+::: simses.model.converter.notton.AsymmetricNotton
 
-### Sungrow
+### NottonType1
 
-::: simses.model.converter.sungrow.Sungrow
+::: simses.model.converter.notton.NottonType1
+
+### NottonType2
+
+::: simses.model.converter.notton.NottonType2
+
+### NottonType3
+
+::: simses.model.converter.notton.NottonType3
+
+### Rampinelli
+
+::: simses.model.converter.rampinelli.Rampinelli
+
+### BonfiglioliTL4Q
+
+::: simses.model.converter.bonfiglioli.BonfiglioliTL4Q
+
+### BonfiglioliTL4QFieldData
+
+::: simses.model.converter.bonfiglioli.BonfiglioliTL4QFieldData
+
+### SungrowSC1000TL
+
+::: simses.model.converter.sungrow.SungrowSC1000TL
 
 ### SinamicsS120
 

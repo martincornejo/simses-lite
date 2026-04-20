@@ -1,17 +1,28 @@
 # Choosing a Converter Model
 
-simses ships six built-in AC/DC converter loss models. All implement the [`ConverterLossModel`][simses.converter.converter.ConverterLossModel] protocol and operate on normalised power (p.u. of the converter's rated `max_power`).
+simses ships ten built-in AC/DC converter loss models, split into two categories. **Fit families** (`Notton`, `AsymmetricNotton`, `Rampinelli`) are generic parametric forms that require explicit coefficients; the `NottonTypeN` subclasses are presets of published coefficients. **Product models** (`BonfiglioliTL4Q`, `BonfiglioliTL4QFieldData`, `SungrowSC1000TL`, `SinamicsS120`, `SinamicsS120Fit`) are specific manufacturer hardware with baked-in coefficients. All implement the [`ConverterLossModel`][simses.converter.converter.ConverterLossModel] protocol and operate on normalised power (p.u. of the converter's rated `max_power`).
 
 ## Comparison
 
-| Model | Loss shape | Data source | Direction symmetry | Constructor args |
-|---|---|---|---|---|
-| [`FixedEfficiency`](#fixedefficiency) | Constant η per direction | User-supplied | Symmetric by default; asymmetric via `(charge, discharge)` tuple | `eff: float \| tuple[float, float]` |
-| [`Notton`](#notton) | Generic fit `η(p) = p / (p + P0 + K·p²)` | Notton et al. 2010 (three published inverter types) | Symmetric | `coefficients: (P0, K) = TYPE_2` |
-| [`Bonfiglioli`](#bonfiglioli) | Notton form with per-direction coefficients and minimum-efficiency floor | F. Müller thesis — datasheet or FCR field data | Datasheet symmetric; field-data asymmetric | `coefficients: 6-tuple = DATASHEET` |
-| [`Sungrow`](#sungrow) | Three selectable fit families, per-direction coefficients, discharge floor for notton/rampinelli | F. Müller thesis — FCR field data | Asymmetric | `fit: "notton" \| "rampinelli" \| "rational"` |
-| [`SinamicsS120`](#sinamicss120) | 101-point lookup built from measured efficiency curves | Schimpe et al. 2018 | Symmetric by default; asymmetric via `use_discharging_curve=True` | `use_discharging_curve: bool = False` |
-| [`SinamicsS120Fit`](#sinamicss120fit) | Closed-form fit `loss(p) = k₀(1 − e^(−m₀|p|)) + k₁|p| + k₂|p|²` | Least-squares fit to Schimpe 2018 data | Symmetric | (none) |
+### Fit families (parametric, require coefficients)
+
+| Model | Loss shape | Constructor args |
+|---|---|---|
+| [`Notton`](#notton) | `η(p) = p / (p + P0 + K·p²)`, symmetric | `P0: float, K: float` |
+| [`AsymmetricNotton`](#asymmetricnotton) | Notton form with independent charge and discharge coefficients | `charge: (P0, K), discharge: (P0, K)` |
+| [`Rampinelli`](#rampinelli) | `η(p) = p / (p + K0 + K1·p + K2·p²)`, symmetric | `K0: float, K1: float, K2: float` |
+| [`NottonType1`](#nottontypen), [`NottonType2`](#nottontypen), [`NottonType3`](#nottontypen) | Three published inverter presets from Notton et al. 2010 | (none — no-arg subclasses of `Notton`) |
+
+### Product models (specific hardware, no-arg constructors)
+
+| Model | Inherits from | Data source | Direction symmetry |
+|---|---|---|---|
+| [`FixedEfficiency`](#fixedefficiency) | — | User-supplied | Symmetric by default; asymmetric via `(charge, discharge)` tuple |
+| [`BonfiglioliTL4Q`](#bonfigliolitl4q) | `Notton` | F. Müller thesis — RPS TL-4Q datasheet | Symmetric |
+| [`BonfiglioliTL4QFieldData`](#bonfigliolitl4qfielddata) | `AsymmetricNotton` | F. Müller thesis — FCR field data | Asymmetric |
+| [`SungrowSC1000TL`](#sungrowsc1000tl) | `AsymmetricNotton` | F. Müller thesis — FCR field data | Asymmetric |
+| [`SinamicsS120`](#sinamicss120) | — | Schimpe et al. 2018 (measured) | Symmetric by default; asymmetric via `use_discharging_curve=True` |
+| [`SinamicsS120Fit`](#sinamicss120fit) | — | Schimpe et al. 2018 (parametric fit) | Symmetric |
 
 At runtime all loss models except `FixedEfficiency` evaluate to linear interpolation on a 201-point internal table (101 per direction, mirrored about zero) — the distinction is how those points were generated.
 
@@ -32,7 +43,9 @@ converter = Converter(
 
 ## `Notton`
 
-A generic parametric PV-inverter loss family with efficiency `η(p) = p / (p + P0 + K·p²)`, where `p` is the magnitude of normalised power. Three published coefficient sets from the reference paper are provided as class attributes — `TYPE_1`, `TYPE_2` (default), `TYPE_3` — representing different inverter technologies. Use this when you have no manufacturer-specific data but want a physically reasonable two-parameter fit.
+A generic parametric PV-inverter loss family with efficiency `η(p) = p / (p + P0 + K·p²)`, where `p` is the magnitude of normalised power. Symmetric about zero. Use this when you have a Notton-form fit to measured data, or when you want a physically reasonable two-parameter baseline.
+
+For custom asymmetric ch/dch use [`AsymmetricNotton`](#asymmetricnotton). For the three published inverter presets see [`NottonTypeN`](#nottontypen) below.
 
 Source: Notton, G., Lazarov, V., Stoyanov, L. *Optimal sizing of a grid-connected PV system for various PV module technologies and inclinations, inverter efficiency characteristics and locations*, [Renewable Energy 35(2) (2010) 541–554](https://doi.org/10.1016/j.renene.2009.07.013).
 
@@ -41,71 +54,117 @@ from simses.converter import Converter
 from simses.model.converter.notton import Notton
 
 converter = Converter(
-    loss_model=Notton(),                         # Type 2 inverter by default
-    max_power=100_000,
-    storage=battery,
-)
-
-# Or with custom coefficients:
-converter = Converter(
-    loss_model=Notton(coefficients=(0.01, 0.04)),
+    loss_model=Notton(P0=0.0072, K=0.0345),
     max_power=100_000,
     storage=battery,
 )
 ```
 
-## `Bonfiglioli`
+## `AsymmetricNotton`
 
-Bonfiglioli RPS TL-4Q inverter. Uses the Notton form but with asymmetric charge/discharge coefficients and a minimum-efficiency floor that clips the curve at low normalised power — important for realistic idling behaviour in high-duty applications. Two published coefficient sets:
-
-- `DATASHEET` (default): manufacturer datasheet measurements. Symmetric ch/dch (`P0=0.0072, K=0.034, min_eff=0.58`).
-- `FIELD_DATA`: measured on FCR battery systems. Asymmetric, with lower minimum efficiencies — reflects real deployment losses including auxiliary consumption.
-
-Source: F. Müller (M.Sc. thesis, TUM) — Notton fit of the [Bonfiglioli RPS TL-4Q datasheet](http://www.docsbonfiglioli.com/pdf_documents/catalogue/VE_CAT_RTL-4Q_STD_ENG-ITA_R00_5_WEB.pdf) with a complementary field-measured dataset.
+Notton-form fit with independent charge and discharge parameter sets. Each direction takes its own `(P0, K)` pair — useful for fitting converters whose measured efficiency curves differ between charging and discharging.
 
 ```python
 from simses.converter import Converter
-from simses.model.converter.bonfiglioli import Bonfiglioli
+from simses.model.converter.notton import AsymmetricNotton
 
 converter = Converter(
-    loss_model=Bonfiglioli(),                    # datasheet data
-    max_power=100_000,
-    storage=battery,
-)
-
-# Field-measured data (asymmetric, lower min η):
-converter = Converter(
-    loss_model=Bonfiglioli(Bonfiglioli.FIELD_DATA),
+    loss_model=AsymmetricNotton(
+        charge=(0.0072, 0.0345),
+        discharge=(0.005, 0.018),
+    ),
     max_power=100_000,
     storage=battery,
 )
 ```
 
-## `Sungrow`
+## `NottonTypeN`
 
-Sungrow SC1000TL manufacturer-specific fit, also backed by field data from a frequency containment reserve (FCR) battery system. Three fit families are selectable via the `fit` argument:
+Three published inverter presets from Notton et al. 2010, provided as no-arg subclasses of `Notton` for convenience:
 
-- `"notton"` (default): classic Notton form. Discharge branch is clipped at a 0.21 minimum efficiency floor.
-- `"rampinelli"`: three-parameter loss polynomial `p / (p + K0 + K1·p + K2·p²)`. Same discharge floor.
-- `"rational"`: direct rational efficiency curve `(a1·p + a0) / (p² + b1·p + b0)`. No floor — the rational form stays bounded naturally.
+- `NottonType1` — `P0 = 0.0145, K = 0.0437`
+- `NottonType2` — `P0 = 0.0072, K = 0.0345`
+- `NottonType3` — `P0 = 0.0088, K = 0.1149`
 
-All three use asymmetric charge/discharge coefficients. Use the rational fit when the Notton/Rampinelli floor clipping produces a visibly flat region you'd rather not see in your efficiency curve.
+```python
+from simses.converter import Converter
+from simses.model.converter.notton import NottonType2
+
+converter = Converter(
+    loss_model=NottonType2(),
+    max_power=100_000,
+    storage=battery,
+)
+```
+
+## `Rampinelli`
+
+A three-parameter generalisation of the Notton form: `η(p) = p / (p + K0 + K1·p + K2·p²)`. The extra linear term lets the fit capture a wider range of measured efficiency curves — useful when a two-parameter Notton fit leaves a visible residual at mid-power.
+
+Source: Rampinelli, G. A., Krenzinger, A., Chenlo Romero, F. *Mathematical models for efficiency of inverters used in grid connected photovoltaic systems*, [Renewable and Sustainable Energy Reviews 34 (2014) 578–587](https://doi.org/10.1016/j.rser.2014.03.047).
+
+```python
+from simses.converter import Converter
+from simses.model.converter.rampinelli import Rampinelli
+
+converter = Converter(
+    loss_model=Rampinelli(K0=0.003, K1=0.014, K2=0.003),
+    max_power=100_000,
+    storage=battery,
+)
+```
+
+## `BonfiglioliTL4Q`
+
+Bonfiglioli RPS TL-4Q inverter parameterised from the manufacturer datasheet — a `Notton` subclass with symmetric coefficients `P0 = 0.0072, K = 0.034`.
+
+See [`BonfiglioliTL4QFieldData`](#bonfigliolitl4qfielddata) for the asymmetric variant parameterised from FCR field data.
+
+Source: F. Müller (M.Sc. thesis, TUM) — Notton fit of the [Bonfiglioli RPS TL-4Q datasheet](http://www.docsbonfiglioli.com/pdf_documents/catalogue/VE_CAT_RTL-4Q_STD_ENG-ITA_R00_5_WEB.pdf).
+
+```python
+from simses.converter import Converter
+from simses.model.converter.bonfiglioli import BonfiglioliTL4Q
+
+converter = Converter(
+    loss_model=BonfiglioliTL4Q(),
+    max_power=100_000,
+    storage=battery,
+)
+```
+
+## `BonfiglioliTL4QFieldData`
+
+Bonfiglioli RPS TL-4Q inverter parameterised from frequency containment reserve (FCR) battery-system field measurements — an `AsymmetricNotton` subclass with distinct charge and discharge coefficients. Reflects real deployment losses including auxiliary consumption that the datasheet curves do not capture. Charge: `P0 = 0.00195, K = 0.01349`. Discharge: `P0 = 0.00292, K = 0.03609`.
+
+Source: F. Müller (M.Sc. thesis, TUM) — field fit on FCR BESS deployments of the Bonfiglioli RPS TL-4Q.
+
+```python
+from simses.converter import Converter
+from simses.model.converter.bonfiglioli import BonfiglioliTL4QFieldData
+
+converter = Converter(
+    loss_model=BonfiglioliTL4QFieldData(),
+    max_power=100_000,
+    storage=battery,
+)
+```
+
+## `SungrowSC1000TL`
+
+Sungrow SC1000TL inverter, an `AsymmetricNotton` subclass backed by field data from an FCR battery system. Charge: `P0 = 0.007701864, K = 0.017290859`. Discharge: `P0 = 0.005511580, K = 0.018772838`.
+
+The original thesis also characterised Rampinelli and rational-form fits of the same measurements; the Notton fit was the default in the legacy simses implementation and is the one ported here.
 
 Source: F. Müller (M.Sc. thesis, TUM) — field fit on a Sungrow SC1000TL inverter.
 
 ```python
 from simses.converter import Converter
-from simses.model.converter.sungrow import Sungrow
+from simses.model.converter.sungrow import SungrowSC1000TL
 
 converter = Converter(
-    loss_model=Sungrow(),                        # notton fit by default
+    loss_model=SungrowSC1000TL(),
     max_power=1_000_000,                         # 1 MW rated
-    storage=battery,
-)
-
-converter = Converter(
-    loss_model=Sungrow(fit="rational"),
-    max_power=1_000_000,
     storage=battery,
 )
 ```
@@ -152,4 +211,4 @@ Writing a new converter loss model means implementing `ac_to_dc(power_norm)` and
 
 - [Converter concept](../concepts/converter.md) — how `ConverterLossModel` composes into `Converter`, the two-pass resolution, and sign handling at the AC/DC boundary.
 - [`Converter` API reference](../api/converter.md).
-- [Models API reference](../api/models.md) — the six shipped loss models.
+- [Models API reference](../api/models.md) — all ten shipped loss models.
