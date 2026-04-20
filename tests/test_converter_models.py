@@ -14,6 +14,7 @@ from simses.model.converter.bonfiglioli import Bonfiglioli
 from simses.model.converter.fix_efficiency import FixedEfficiency
 from simses.model.converter.notton import Notton
 from simses.model.converter.sinamics import SinamicsS120, SinamicsS120Fit
+from simses.model.converter.sungrow import Sungrow
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +52,18 @@ CONVERTER_SPECS: list[ConverterModelSpec] = [
     ConverterModelSpec(
         name="Bonfiglioli_FieldData",
         factory=lambda: Bonfiglioli(Bonfiglioli.FIELD_DATA),
+    ),
+    ConverterModelSpec(
+        name="Sungrow_Notton",
+        factory=Sungrow,
+    ),
+    ConverterModelSpec(
+        name="Sungrow_Rampinelli",
+        factory=lambda: Sungrow(fit="rampinelli"),
+    ),
+    ConverterModelSpec(
+        name="Sungrow_Rational",
+        factory=lambda: Sungrow(fit="rational"),
     ),
     ConverterModelSpec(
         name="SinamicsS120",
