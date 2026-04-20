@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import pytest
 
 from simses.model.converter.fix_efficiency import FixedEfficiency
+from simses.model.converter.notton import Notton
 from simses.model.converter.sinamics import SinamicsS120, SinamicsS120Fit
 
 
@@ -33,6 +34,14 @@ CONVERTER_SPECS: list[ConverterModelSpec] = [
     ConverterModelSpec(
         name="FixedEfficiency_Asymmetric",
         factory=lambda: FixedEfficiency((0.96, 0.94)),
+    ),
+    ConverterModelSpec(
+        name="Notton_Type2",
+        factory=Notton,
+    ),
+    ConverterModelSpec(
+        name="Notton_Type1",
+        factory=lambda: Notton(Notton.TYPE_1),
     ),
     ConverterModelSpec(
         name="SinamicsS120",
