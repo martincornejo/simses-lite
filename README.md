@@ -1,6 +1,7 @@
 # simses
 
 [![PyPI](https://img.shields.io/pypi/v/simses)](https://pypi.org/project/simses/)
+[![Python](https://img.shields.io/pypi/pyversions/simses)](https://pypi.org/project/simses/)
 [![CI](https://github.com/tum-ees/simses/actions/workflows/ci.yml/badge.svg)](https://github.com/tum-ees/simses/actions/workflows/ci.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/pypi/l/simses)](LICENSE)
