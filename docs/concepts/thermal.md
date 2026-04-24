@@ -93,6 +93,15 @@ flowchart LR
 
 Each node has a lumped thermal capacity; each edge is a thermal resistance. Capacities are precomputed once from [`ContainerProperties`][simses.thermal.container.ContainerProperties] (length × width × height × material ρ × cₚ for walls and air); resistances combine half-layer conductive plus surface convection terms. Each `step(dt)` evaluates the five forward-Euler node equations using current-step temperatures only (explicit scheme — stable for realistic wall thicknesses and timesteps of a few seconds).
 
+Two ready-made presets are available as dataclass subclasses — [`FortyFtContainer`][simses.model.thermal.containers.FortyFtContainer] (12 m, rock-wool) and [`TwentyFtContainer`][simses.model.thermal.containers.TwentyFtContainer] (5.9 m, polyurethane). Instantiate them with no arguments for the defaults, or pass keyword arguments to override individual parameters:
+
+```python
+from simses.model.thermal.containers import FortyFtContainer
+
+props = FortyFtContainer()                  # all defaults
+props_less_air = FortyFtContainer(vol_air=0.7)   # 70 % of volume is air (rest is rack hardware)
+```
+
 The internal-air balance is the most useful node to reason about, since it's where HVAC lands and what the thermostat tracks:
 
 $$

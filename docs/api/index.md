@@ -47,6 +47,14 @@ from simses.thermal import ThermostatStrategy, ThermostatMode
 from simses.thermal import SolarConfig, solar_heat_load
 ```
 
+### Thermal Container Presets
+
+```python
+from simses.model.thermal.containers import FortyFtContainer, TwentyFtContainer
+from simses.model.thermal.containers import AluminumLayer, SteelLayer
+from simses.model.thermal.containers import RockWoolLayer, PolyurethaneLayer
+```
+
 ### Cell Models
 
 ```python
