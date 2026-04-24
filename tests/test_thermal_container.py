@@ -75,15 +75,15 @@ class TestContainerProperties:
     def test_forty_ft_A_surface_sanity(self):
         # 2*(12*2.3 + 12*2.35 + 2.3*2.35) = 2*(27.6 + 28.2 + 5.405) = 2*61.205 ≈ 122.41
         # expect > 100
-        assert FortyFtContainer.A_surface > 100.0
+        assert FortyFtContainer().A_surface > 100.0
 
     def test_forty_ft_V_internal(self):
         expected = 12.0 * 2.3 * 2.35
-        assert FortyFtContainer.V_internal == pytest.approx(expected)
+        assert FortyFtContainer().V_internal == pytest.approx(expected)
 
     def test_twenty_ft_smaller_than_forty_ft(self):
-        assert TwentyFtContainer.A_surface < FortyFtContainer.A_surface
-        assert TwentyFtContainer.V_internal < FortyFtContainer.V_internal
+        assert TwentyFtContainer().A_surface < FortyFtContainer().A_surface
+        assert TwentyFtContainer().V_internal < FortyFtContainer().V_internal
 
 
 # ===================================================================
@@ -215,7 +215,7 @@ class TestContainerThermalModelUnit:
         """
         from simses.model.thermal.containers import FortyFtContainer
 
-        model = _make_model(properties=FortyFtContainer, T_ambient=-23.0, T_initial=77.0)
+        model = _make_model(properties=FortyFtContainer(), T_ambient=-23.0, T_initial=77.0)
         T_in_before = 350.0
         for _ in range(300):
             model.step(dt=1.0)
@@ -304,7 +304,7 @@ class TestContainerThermalModelIntegration:
         limit (τ_air ≈ 21 s for a 40-ft container).
         """
         bat = _make_battery(T=25.0, soc=0.5)
-        model = _make_model(properties=FortyFtContainer)
+        model = _make_model(properties=FortyFtContainer())
         model.add_component(bat)
 
         for _ in range(100):
@@ -328,7 +328,7 @@ class TestContainerThermalModelIntegration:
 
     def test_forty_ft_container_runs_without_error(self):
         bat = _make_battery(T=25.0, soc=0.5)
-        model = _make_model(properties=FortyFtContainer)
+        model = _make_model(properties=FortyFtContainer())
         model.add_component(bat)
         for _ in range(5):
             bat.step(power_setpoint=500.0, dt=60.0)
@@ -336,7 +336,7 @@ class TestContainerThermalModelIntegration:
 
     def test_twenty_ft_container_runs_without_error(self):
         bat = _make_battery(T=25.0, soc=0.5)
-        model = _make_model(properties=TwentyFtContainer)
+        model = _make_model(properties=TwentyFtContainer())
         model.add_component(bat)
         for _ in range(5):
             bat.step(power_setpoint=500.0, dt=60.0)
@@ -345,7 +345,7 @@ class TestContainerThermalModelIntegration:
     def test_100_steps_physical_temperature_bounds(self):
         """Over 100 steps at dt=1 s, all temperatures remain physically plausible (-100–200 °C)."""
         bat = _make_battery(T=25.0, soc=0.5)
-        model = _make_model(properties=FortyFtContainer)
+        model = _make_model(properties=FortyFtContainer())
         model.add_component(bat)
 
         for _ in range(100):
