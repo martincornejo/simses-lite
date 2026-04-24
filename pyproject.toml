@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "simses"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Add your description here"
 readme = "README.md"
 classifiers = [
@@ -46,6 +46,10 @@ where = ["src"]
 
 [tool.setuptools.package-data] 
 "simses" = ["**/*.csv"] 
+
+[tool.setuptools_scm]
+version_file = "src/simses/_version.py"
+
 
 [tool.pytest.ini_options]
 # Make `examples/` importable in tests so example scripts can be used
