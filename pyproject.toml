@@ -5,8 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simses"
 dynamic = ["version"]
-description = "Add your description here"
+description = "Simulation of Scalable Energy Storage Systems "
 readme = "README.md"
+license = "BSD-3-Clause"
 classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
