@@ -98,9 +98,12 @@ Two ready-made presets are available as dataclass subclasses — [`FortyFtContai
 ```python
 from simses.model.thermal.containers import FortyFtContainer
 
-props = FortyFtContainer()                  # all defaults
-props_less_air = FortyFtContainer(vol_air=0.7)   # 70 % of volume is air (rest is rack hardware)
+props = FortyFtContainer()                         # all defaults
+props_less_air = FortyFtContainer(vol_air=0.7)     # 70 % of volume is air (rest is rack hardware)
+props_bridged = FortyFtContainer(u_bridge_factor=2.0)  # account for thermal bridges in framing
 ```
+
+**Thermal bridges** are structural elements — steel framing, fasteners, panel joints — that bypass the insulation layer with a path of higher conductance than the bulk material suggests. `u_bridge_factor > 1` captures this by dividing the mid-layer resistance $r_\mathrm{mid}$ by the factor, raising the effective wall U-value while leaving capacities, geometry, and all other resistances unchanged. The default of `1.0` applies no correction.
 
 The internal-air balance is the most useful node to reason about, since it's where HVAC lands and what the thermostat tracks:
 

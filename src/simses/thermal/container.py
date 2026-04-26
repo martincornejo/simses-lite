@@ -44,9 +44,13 @@ class ContainerProperties:
         inner:      Innermost wall layer (e.g. aluminium).
         mid:        Middle wall layer (e.g. insulation).
         outer:      Outermost wall layer (e.g. steel).
-        vol_air:    Factor of volume of the container occupied by air in % (default: 1.0)
-        A_surface:  Total surface area in m² (derived).
-        V_internal: Internal volume in m³ (derived).
+        vol_air:          Fraction of internal volume occupied by air (default: 1.0).
+        u_bridge_factor:  Multiplier applied to mid-layer conductance to model thermal
+                          bridges (steel framing, fasteners, panel joints). Values > 1
+                          reduce ``r_mid``, raising the effective wall U-value.
+                          Default: 1.0 (no bridge correction).
+        A_surface:        Total surface area in m² (derived).
+        V_internal:       Internal volume in m³ (derived).
     """
 
     length: float
@@ -58,6 +62,7 @@ class ContainerProperties:
     mid: ContainerLayer
     outer: ContainerLayer
     vol_air: float = 1.0
+    u_bridge_factor: float = 1.0
     A_surface: float = field(init=False)
     V_internal: float = field(init=False)
 
@@ -343,9 +348,11 @@ class ContainerThermalModel:
         self._C_out = outer.density * outer.thickness * A * outer.specific_heat
 
         # precompute thermal resistances
+        # u_bridge_factor > 1 reduces mid-layer resistance to model thermal bridges
+        r_mid = mid.thickness / (mid.conductivity * A) / properties.u_bridge_factor
         self._R_air_out = 1.0 / (properties.h_outer * A)
-        self._R_out_mid = outer.thickness / (outer.conductivity * A) + 0.5 * mid.thickness / (mid.conductivity * A)
-        self._R_mid_in = 0.5 * mid.thickness / (mid.conductivity * A) + inner.thickness / (inner.conductivity * A)
+        self._R_out_mid = outer.thickness / (outer.conductivity * A) + 0.5 * r_mid
+        self._R_mid_in = 0.5 * r_mid + inner.thickness / (inner.conductivity * A)
         self._R_in_air = 1.0 / (properties.h_inner * A)
 
     @property

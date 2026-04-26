@@ -85,6 +85,24 @@ class TestContainerProperties:
         assert TwentyFtContainer().A_surface < FortyFtContainer().A_surface
         assert TwentyFtContainer().V_internal < FortyFtContainer().V_internal
 
+    def test_u_bridge_factor_default(self):
+        assert _unit_box_container().u_bridge_factor == pytest.approx(1.0)
+
+    def test_u_bridge_factor_custom(self):
+        layer = ContainerLayer(thickness=0.001, conductivity=237.0, density=2700.0, specific_heat=910.0)
+        props = ContainerProperties(
+            length=1.0,
+            width=1.0,
+            height=1.0,
+            h_inner=10.0,
+            h_outer=10.0,
+            inner=layer,
+            mid=layer,
+            outer=layer,
+            u_bridge_factor=3.0,
+        )
+        assert props.u_bridge_factor == pytest.approx(3.0)
+
 
 # ===================================================================
 # ThermostatStrategy
@@ -262,6 +280,44 @@ class TestContainerThermalModelUnit:
         model.step(dt=dt)
 
         assert comp.state.T == pytest.approx(T_bat_expected)
+
+    def test_u_bridge_factor_reduces_mid_layer_resistance(self):
+        """u_bridge_factor halves r_mid so T_mid cools faster once T_out–T_mid gradient builds.
+
+        Step 1: all wall nodes equal T_initial → dT_mid = 0 for both models.
+        Step 2: T_out fell in step 1 → non-zero T_out–T_mid gradient; model with
+        u_bridge_factor=2 has half the R_out_mid and therefore a larger drop in T_mid.
+        """
+        metal = ContainerLayer(thickness=0.001, conductivity=237.0, density=2700.0, specific_heat=910.0)
+        insulation = ContainerLayer(thickness=0.05, conductivity=0.05, density=100.0, specific_heat=840.0)
+
+        def _make_props(u: float) -> ContainerProperties:
+            return ContainerProperties(
+                length=6.0,
+                width=2.5,
+                height=2.5,
+                h_inner=30.0,
+                h_outer=30.0,
+                inner=metal,
+                mid=insulation,
+                outer=metal,
+                u_bridge_factor=u,
+            )
+
+        T_initial, T_amb = 50.0, 20.0
+        model1 = _make_model(properties=_make_props(1.0), T_ambient=T_amb, T_initial=T_initial)
+        model2 = _make_model(properties=_make_props(2.0), T_ambient=T_amb, T_initial=T_initial)
+
+        # Step 1: T_out drops toward ambient; T_mid unchanged (T_out == T_mid initially → zero flux)
+        model1.step(dt=1.0)
+        model2.step(dt=1.0)
+        assert model1.state.T_mid == pytest.approx(T_initial)
+        assert model2.state.T_mid == pytest.approx(T_initial)
+
+        # Step 2: T_out < T_mid now → heat drains from T_mid; model2 drains more (halved R_out_mid)
+        model1.step(dt=1.0)
+        model2.step(dt=1.0)
+        assert model2.state.T_mid < model1.state.T_mid
 
     def test_exact_euler_step_air(self):
         """Verify forward-Euler formula for air node (single battery, pre-step values)."""
