@@ -99,6 +99,7 @@ nav:
   - User Guides:
       - Installation: guides/installation.md
       - Choosing a Cell Model: guides/cell-models.md
+      - Choosing an Aging Model: guides/aging-models.md
       - Choosing a Converter Model: guides/converter-models.md
       - Multi-String Systems: guides/multi-string.md
       - Logging and Plots: guides/logging-and-plots.md
