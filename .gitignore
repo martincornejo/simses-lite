@@ -23,3 +23,7 @@ uv.lock
 # Documentation build output
 .cache/
 site/
+
+# Direnv
+.direnv
+/.envrc
