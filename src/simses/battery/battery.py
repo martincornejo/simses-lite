@@ -207,7 +207,10 @@ class Battery:
         """Request power setpoint needed to reach a given target SOC
         as fast as possbile while respecting battery limits.
 
-        Enables query of battery behaviour without modifying ``self.state``
+        Enables query of battery behaviour without significantly modifying ``self.state``.
+        The derived cell properties ``ocv, hys, rint, entropy and is_charge`` are
+        refreshed to ensure correct behaviour, this has no effect if target_soc() is used
+        before stepping the battery and after stepping thermal calculations.
 
         Args:
             soc_target: Desired SOC value.
@@ -218,17 +221,21 @@ class Battery:
         """
         state: BatteryState = self.state
         soc = state.soc
+        (soc_min, soc_max) = self.soc_limits
+
+        is_charge = state.is_charge = soc_target > soc
+
+        ocv = state.ocv = self.open_circuit_voltage(state)
+        hys = state.hys = self.hysteresis_voltage(state)
+        rint = state.rint = self.internal_resistance(state)
+        state.entropy = self.entropic_coefficient(state)
+        Q = self.capacity(state)
+
 
         if soc_target == soc:
             return 0
 
-        (soc_min, soc_max) = self.soc_limits
-        ocv = self.open_circuit_voltage(state)
-        hys = self.hysteresis_voltage(state)
-        rint = self.internal_resistance(state)
-        Q = self.capacity(state)
-
-        if soc_target > soc:
+        elif is_charge:
             # charge direction
             i = min(
                 self.max_charge_current,  # C-rate limit
@@ -244,15 +251,13 @@ class Battery:
                 (max(soc_target, soc_min) - soc) * Q / (dt / 3600),  # SOC limit
             )
 
-        # TODO: apply derating (this depends on current values of ocv, hys and rint in self.state)
-        # either state must be updated at the end of each step to reflect final values, state must be modified in target_soc()
-        # or derating must be ignored in target_soc()
-        # if self.derating is not None:
-        #     i_derate = self.derating.derate(i, state)
-        #     if i > 0 and i_derate < i:
-        #         i = i_derate
-        #     elif i < 0 and i_derate > i:
-        #         i = i_derate
+        # apply derating
+        if self.derating is not None:
+            i_derate = self.derating.derate(i, state)
+            if i > 0 and i_derate < i:
+                i = i_derate
+            elif i < 0 and i_derate > i:
+                i = i_derate
 
         return i * (ocv + hys + rint * i)
 

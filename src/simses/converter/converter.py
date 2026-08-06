@@ -112,6 +112,9 @@ class Converter:
         as fast as possbile while respecting system limits.
 
         Enables query of storage behaviour without touching ``self.state``
+        The derived cell properties ``ocv, hys, rint, entropy and is_charge`` in ``storage.state`` are
+        refreshed to ensure correct behaviour, this has no effect if target_soc() is used
+        before stepping the battery and after stepping thermal calculations.
 
         Args:
             soc_target: Desired SOC value.
