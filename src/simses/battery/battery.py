@@ -203,6 +203,59 @@ class Battery:
         if self.degradation is not None:
             self.degradation.step(self.state, dt)  # updates state.soh_Q and state.soh_R
 
+    def target_soc(self, soc_target: float, dt: float) -> float:
+        """Request power setpoint needed to reach a given target SOC
+        as fast as possbile while respecting battery limits.
+
+        Enables query of battery behaviour without modifying ``self.state``
+
+        Args:
+            soc_target: Desired SOC value.
+            dt: Timestep in seconds.
+
+        Returns:
+            Battery setpoint in W, same sign convention as ``step``.
+        """
+        state: BatteryState = self.state
+        soc = state.soc
+
+        if soc_target == soc:
+            return 0
+
+        (soc_min, soc_max) = self.soc_limits
+        ocv = self.open_circuit_voltage(state)
+        hys = self.hysteresis_voltage(state)
+        rint = self.internal_resistance(state)
+        Q = self.capacity(state)
+
+        if soc_target > soc:
+            # charge direction
+            i = min(
+                self.max_charge_current,  # C-rate limit
+                (self.max_voltage - ocv - hys) / rint,  # voltage limit
+                (min(soc_target, soc_max) - soc) * Q / (dt / 3600),  # SOC limit
+            )
+
+        else:
+            # discharge direction
+            i = max(
+                -self.max_discharge_current,  # C-rate limit
+                (self.min_voltage - ocv - hys) / rint,  # voltage limit
+                (max(soc_target, soc_min) - soc) * Q / (dt / 3600),  # SOC limit
+            )
+
+        # TODO: apply derating (this depends on current values of ocv, hys and rint in self.state)
+        # either state must be updated at the end of each step to reflect final values, state must be modified in target_soc()
+        # or derating must be ignored in target_soc()
+        # if self.derating is not None:
+        #     i_derate = self.derating.derate(i, state)
+        #     if i > 0 and i_derate < i:
+        #         i = i_derate
+        #     elif i < 0 and i_derate > i:
+        #         i = i_derate
+
+        return i * (ocv + hys + rint * i)
+
     def equilibrium_current(self, power_setpoint: float, ocv: float, hys: float, rint: float) -> float:
         """Solve the ECM for the current that meets a power setpoint.
 
