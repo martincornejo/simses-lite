@@ -7,6 +7,7 @@ from simses.battery.properties import ElectricalCellProperties, ThermalCellPrope
 
 
 class SCA3200(CellType):
+    # use soc limits for working range, set voltage limits at [0.0, 3.0] and use headroom for voltage over/undershoot?
     def __init__(
             self,
             capacitance:float = 3200.0,  # F
@@ -24,7 +25,8 @@ class SCA3200(CellType):
             thermal_cap = 633.7,  # J/°C
     ) -> None:
 
-        energy_wh = (rated_voltage**2 - min_voltage**2) * capacitance / 2 / 3600
+        energy_Wh = (rated_voltage**2 - min_voltage**2) * capacitance / 2 / 3600
+        nom_capacity_Ah = capacitance * (rated_voltage - min_voltage) / 3600
 
         # leakage current seems to be unused at the moment
         if leakage_current == 0.0:
@@ -35,11 +37,11 @@ class SCA3200(CellType):
             usable_range = (rated_voltage - min_voltage) / rated_voltage
             leakage_pu = (usable_range - delta_1d) / usable_range
 
-        c_rate = peak_power/energy_wh  # very basic approximation
+        c_rate = peak_power/energy_Wh  # very basic approximation
 
         electrical = ElectricalCellProperties(
-            nominal_capacity=energy_wh/nom_voltage,
-            nominal_voltage=nom_voltage,
+            nominal_capacity=nom_capacity_Ah,
+            nominal_voltage=energy_Wh/nom_capacity_Ah,
             max_voltage=rated_voltage,
             min_voltage=min_voltage,
             max_charge_rate=c_rate,
