@@ -16,16 +16,18 @@ class EMS:
             self,
             storage_main: Storage,
             storage_aux: Storage,
+            main_power_change: float,  # limit how fast power to main system can change in W/s
             aux_soc_target: float = 0.5,
     ):
         self.state = EMSState()
         self.storage_main = storage_main
         self.storage_aux = storage_aux
+        self.main_power_change = main_power_change
         self.aux_soc_target = aux_soc_target
 
     def step(self, power_setpoint:float, dt: float) -> None:
         aux_optimal = self.storage_aux.target_soc(self.aux_soc_target, dt)
-        main_setpoint = power_setpoint - aux_optimal
+        main_setpoint = self._main_powerlimit(power_setpoint - aux_optimal, dt)
 
         power_main = self.storage_main.step(main_setpoint, dt)
 
@@ -39,5 +41,11 @@ class EMS:
 
     def target_soc(self, soc_target: float, dt: float) -> float:
         main_power = self.storage_main.target_soc(soc_target, dt)
+        main_power = self._main_powerlimit(main_power, dt)
         aux_power = self.storage_aux.target_soc(self.aux_soc_target, dt)
         return main_power + aux_power
+
+    def _main_powerlimit(self, power_setpoint: float, dt: float) -> float:
+        dp = dt * self.main_power_change
+        last_power = self.state.power_main
+        return min(max(power_setpoint, last_power-dp), last_power+dp)
