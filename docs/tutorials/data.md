@@ -1,0 +1,2 @@
+example profile "000024.parquet" taken from
+Vercellino et al., “Measurement of Generative AI Workload Power Profiles for Whole-Facility Data Center Infrastructure Planning,” [arXiv:2604.07345](https://arxiv.org/abs/2604.07345) (2026).
