@@ -21,8 +21,8 @@ from simses.model.converter import FixedEfficiency
 
 converter = Converter(
     loss_model=FixedEfficiency(0.95),  # the "loss characteristic"
-    max_power=10_000,                   # rated AC power in W
-    storage=battery,                    # anything with step() + state.power
+    max_power=10_000,  # rated AC power in W
+    storage=battery,  # anything with step() + state.power
 )
 ```
 

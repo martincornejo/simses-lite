@@ -28,9 +28,9 @@ degradation = DegradationModel(
     initial_soc=0.5,
 )
 
-battery = Battery(cell=SonyLFP(), circuit=(13, 2),
-                  initial_states={"start_soc": 0.5, "start_T": 25.0},
-                  degradation=degradation)
+battery = Battery(
+    cell=SonyLFP(), circuit=(13, 2), initial_states={"start_soc": 0.5, "start_T": 25.0}, degradation=degradation
+)
 ```
 
 Cells that ship a default can skip the explicit construction: `Battery(..., degradation=True)` asks the `CellType` for its `default_degradation_model(initial_soc)`.

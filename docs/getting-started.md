@@ -24,7 +24,7 @@ Quick import check:
 ```python
 from simses.model.cell.sony_lfp import SonyLFP
 
-cell = SonyLFP()                # 3 Ah, 3.2 V LFP cell (Sony/Murata US26650FTC1)
+cell = SonyLFP()  # 3 Ah, 3.2 V LFP cell (Sony/Murata US26650FTC1)
 ```
 
 ## Your first simulation
@@ -44,7 +44,7 @@ battery = Battery(
 dt = 60  # seconds per step
 
 for _ in range(30):
-    battery.step(-50.0, dt)   # negative = discharging
+    battery.step(-50.0, dt)  # negative = discharging
 
 s = battery.state
 print(f"SOC:         {s.soc:.3f}")

@@ -25,7 +25,7 @@ battery = Battery(
     cell=SonyLFP(),
     circuit=(13, 1),
     initial_states={"start_soc": 0.5, "start_T": 25.0},
-    degradation=True,                     # picks up the default Naumann pair
+    degradation=True,  # picks up the default Naumann pair
 )
 ```
 

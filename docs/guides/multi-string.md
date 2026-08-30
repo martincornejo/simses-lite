@@ -29,7 +29,7 @@ def make_string(start_soc, circuit=(104, 10), max_power=20_000):
 
 strings = [
     make_string(start_soc=0.3, circuit=(104, 10), max_power=20_000),  # full-size
-    make_string(start_soc=0.7, circuit=(104, 5),  max_power=10_000),  # half size, half power
+    make_string(start_soc=0.7, circuit=(104, 5), max_power=10_000),  # half size, half power
 ]
 ```
 
@@ -56,9 +56,9 @@ import numpy as np
 
 def soc_weighted_split(strings, total_power, eps=1e-6):
     socs = np.array([battery.state.soc for battery, _ in strings])
-    if total_power < 0:                              # discharging
+    if total_power < 0:  # discharging
         weights = (socs + eps) / (socs + eps).sum()
-    else:                                             # charging (or idle)
+    else:  # charging (or idle)
         weights = (1 - socs + eps) / (1 - socs + eps).sum()
     return total_power * weights
 

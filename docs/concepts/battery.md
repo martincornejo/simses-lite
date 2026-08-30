@@ -18,8 +18,8 @@ from simses.battery import Battery
 from simses.model.cell.sony_lfp import SonyLFP
 
 battery = Battery(
-    cell=SonyLFP(),              # the "datasheet"
-    circuit=(13, 2),             # 13 in series, 2 strings in parallel
+    cell=SonyLFP(),  # the "datasheet"
+    circuit=(13, 2),  # 13 in series, 2 strings in parallel
     initial_states={"start_soc": 0.5, "start_T": 25.0},
 )
 ```

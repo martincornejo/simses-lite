@@ -49,13 +49,18 @@ class ToyLTO(CellType):
     def __init__(self) -> None:
         super().__init__(
             electrical=ElectricalCellProperties(
-                nominal_capacity=40.0, nominal_voltage=2.3,
-                max_voltage=2.8, min_voltage=1.5,
-                max_charge_rate=4.0, max_discharge_rate=4.0,
+                nominal_capacity=40.0,
+                nominal_voltage=2.3,
+                max_voltage=2.8,
+                min_voltage=1.5,
+                max_charge_rate=4.0,
+                max_discharge_rate=4.0,
             ),
             thermal=ThermalCellProperties(
-                min_temperature=-20.0, max_temperature=60.0,
-                mass=1.0, specific_heat=1000.0,
+                min_temperature=-20.0,
+                max_temperature=60.0,
+                mass=1.0,
+                specific_heat=1000.0,
                 convection_coefficient=10.0,
             ),
             cell_format=PrismaticCell(height=120, width=20, length=100),
@@ -125,8 +130,7 @@ class MyCell(CellType):
         return interp1d_scalar(state.soc, self._ocv_soc, self._ocv_v)
 
     def internal_resistance(self, state):
-        return interp2d_scalar(state.soc, state.T,
-                               self._rint_soc, self._rint_T, self._rint_mat)
+        return interp2d_scalar(state.soc, state.T, self._rint_soc, self._rint_T, self._rint_mat)
 ```
 
 Storing the LUTs as plain Python lists lets `interp1d_scalar` use `bisect` on the raw sequence — faster than numpy for scalar-at-a-time lookups inside a hot loop. The shipped [`SonyLFP`][simses.model.cell.sony_lfp.SonyLFP] goes further with separate charge/discharge matrices in a 2-D lookup; use that as the full reference.

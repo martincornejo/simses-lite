@@ -34,7 +34,7 @@ battery = Battery(
     cell=SonyLFP(),
     circuit=(13, 1),
     initial_states={"start_soc": 0.5, "start_T": 25.0},
-    degradation=True,                     # picks up the Naumann pair automatically
+    degradation=True,  # picks up the Naumann pair automatically
 )
 ```
 
@@ -58,8 +58,8 @@ from simses.model.degradation.gasper_lfp_gr_calendar import GasperLFPGrCalendar
 from simses.model.degradation.gasper_lfp_gr_cyclic import GasperLFPGrCyclic
 
 battery = Battery(
-    cell=SonyLFP(),                              # LFP-chemistry electrical proxy
-    circuit=(1, 100),                            # scale to system size
+    cell=SonyLFP(),  # LFP-chemistry electrical proxy
+    circuit=(1, 100),  # scale to system size
     initial_states={"start_soc": 0.5, "start_T": 25.0},
     degradation=DegradationModel(
         calendar=GasperLFPGrCalendar(),
@@ -89,7 +89,7 @@ from simses.model.degradation.gasper_nmc_gr_b1_calendar import GasperNMCGrB1Cale
 from simses.model.degradation.gasper_nmc_gr_b1_cyclic import GasperNMCGrB1Cyclic
 
 battery = Battery(
-    cell=Samsung94AhNMC(),                       # NMC-chemistry electrical proxy
+    cell=Samsung94AhNMC(),  # NMC-chemistry electrical proxy
     circuit=(96, 1),
     initial_states={"start_soc": 0.5, "start_T": 25.0},
     degradation=DegradationModel(
