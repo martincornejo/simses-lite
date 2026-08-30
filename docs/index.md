@@ -20,12 +20,12 @@ from simses.model.cell.sony_lfp import SonyLFP
 
 battery = Battery(
     cell=SonyLFP(),
-    circuit=(13, 1),                                    # 13 serial, 1 parallel
+    circuit=(13, 1),  # 13 serial, 1 parallel
     initial_states={"start_soc": 0.5, "start_T": 25.0},
 )
 
 for _ in range(30):
-    battery.step(-50.0, dt=60)   # discharge at 50 W, one minute per step
+    battery.step(-50.0, dt=60)  # discharge at 50 W, one minute per step
 
 print(f"SOC: {battery.state.soc:.3f}, V: {battery.state.v:.2f}")
 # SOC: 0.303, V: 42.17

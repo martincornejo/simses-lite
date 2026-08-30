@@ -29,7 +29,7 @@ env.add_component(battery)
 
 for t in range(n_steps):
     battery.step(power[t], dt)
-    env.step(dt)                    # reads battery.state.heat, writes battery.state.T
+    env.step(dt)  # reads battery.state.heat, writes battery.state.T
 ```
 
 ## The `ThermalComponent` contract
@@ -98,8 +98,8 @@ Two ready-made presets are available as dataclass subclasses — [`FortyFtContai
 ```python
 from simses.model.thermal.containers import FortyFtContainer
 
-props = FortyFtContainer()                         # all defaults
-props_less_air = FortyFtContainer(vol_air=0.7)     # 70 % of volume is air (rest is rack hardware)
+props = FortyFtContainer()  # all defaults
+props_less_air = FortyFtContainer(vol_air=0.7)  # 70 % of volume is air (rest is rack hardware)
 props_bridged = FortyFtContainer(u_bridge_factor=2.0)  # account for thermal bridges in framing
 ```
 
@@ -167,14 +167,14 @@ The input GHI must carry a **timezone-aware** `DatetimeIndex`; the function enfo
 from simses.thermal.solar import SolarConfig, solar_heat_load
 
 q_solar = solar_heat_load(
-    ghi=ghi_series,                                    # pd.Series, W/m², tz-aware index
+    ghi=ghi_series,  # pd.Series, W/m², tz-aware index
     container=container_properties,
     config=SolarConfig(latitude=48.14, longitude=11.58, azimuth=0.0),
 )
 
 for t, step in enumerate(timesteps):
     battery.step(power[t], dt)
-    container.Q_solar = q_solar.iloc[t]                # feed per-step
+    container.Q_solar = q_solar.iloc[t]  # feed per-step
     container.T_ambient = ambient_series.iloc[t]
     container.step(dt)
 ```

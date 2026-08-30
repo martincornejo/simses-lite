@@ -35,8 +35,8 @@ from simses.converter import Converter
 from simses.model.converter.fix_efficiency import FixedEfficiency
 
 converter = Converter(
-    loss_model=FixedEfficiency(0.95),           # or (0.96, 0.94) for asymmetry
-    max_power=100_000,                           # 100 kW rated
+    loss_model=FixedEfficiency(0.95),  # or (0.96, 0.94) for asymmetry
+    max_power=100_000,  # 100 kW rated
     storage=battery,
 )
 ```
@@ -164,7 +164,7 @@ from simses.model.converter.sungrow import SungrowSC1000TL
 
 converter = Converter(
     loss_model=SungrowSC1000TL(),
-    max_power=1_000_000,                         # 1 MW rated
+    max_power=1_000_000,  # 1 MW rated
     storage=battery,
 )
 ```
@@ -180,7 +180,7 @@ from simses.converter import Converter
 from simses.model.converter.sinamics import SinamicsS120
 
 converter = Converter(
-    loss_model=SinamicsS120(),                   # or use_discharging_curve=True
+    loss_model=SinamicsS120(),  # or use_discharging_curve=True
     max_power=100_000,
     storage=battery,
 )

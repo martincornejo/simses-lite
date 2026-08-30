@@ -54,9 +54,9 @@ from simses.battery.state import BatteryState
 
 
 class SqrtTimeCalendar:
-    K_REF = 1e-5          # [1/sqrt(s)] loss rate at T_ref
-    T_REF = 25.0          # [°C]
-    T_ACC = 20.0          # [K] Q10-style acceleration
+    K_REF = 1e-5  # [1/sqrt(s)] loss rate at T_ref
+    T_REF = 25.0  # [°C]
+    T_ACC = 20.0  # [K] Q10-style acceleration
 
     def _stress(self, T: float) -> float:
         return self.K_REF * math.exp((T - self.T_REF) / self.T_ACC)
@@ -130,8 +130,10 @@ from simses.degradation.state import DegradationState
 
 prior = DegradationState(qloss_cal=0.05, qloss_cyc=0.02)
 DegradationModel(
-    calendar=SqrtTimeCalendar(), cyclic=DodSquaredCyclic(),
-    initial_soc=0.5, initial_state=prior,
+    calendar=SqrtTimeCalendar(),
+    cyclic=DodSquaredCyclic(),
+    initial_soc=0.5,
+    initial_state=prior,
 )
 ```
 

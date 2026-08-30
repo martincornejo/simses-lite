@@ -72,6 +72,22 @@ Concrete implementations of cell, converter, degradation, and thermal models.
 
 ::: simses.model.degradation.sony_lfp_cyclic.SonyLFPCyclicDegradation
 
+### Gasper LFP|Gr Calendar Degradation
+
+::: simses.model.degradation.gasper_lfp_gr_calendar.GasperLFPGrCalendar
+
+### Gasper LFP|Gr Cyclic Degradation
+
+::: simses.model.degradation.gasper_lfp_gr_cyclic.GasperLFPGrCyclic
+
+### Gasper NMC|Gr B1 Calendar Degradation
+
+::: simses.model.degradation.gasper_nmc_gr_b1_calendar.GasperNMCGrB1Calendar
+
+### Gasper NMC|Gr B1 Cyclic Degradation
+
+::: simses.model.degradation.gasper_nmc_gr_b1_cyclic.GasperNMCGrB1Cyclic
+
 ## Thermal Container Presets
 
 ::: simses.model.thermal.containers

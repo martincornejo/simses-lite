@@ -105,7 +105,7 @@ class MultiStringLog(SimulationLog):
             fields += [f"s{i}_soc", f"s{i}_power"]
         super().__init__(n_steps, dt, fields)
 
-    def log(self, index: int) -> None:                         # type: ignore[override]
+    def log(self, index: int) -> None:  # type: ignore[override]
         socs = [bat.state.soc for bat, _ in self.strings]
         self.data["total_power"][index] = sum(c.state.power for _, c in self.strings)
         self.data["avg_soc"][index] = sum(socs) / len(socs)
@@ -131,10 +131,10 @@ A minimal 2×2 grid of SOC, terminal voltage, current, and delivered power:
 import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(2, 2, figsize=(10, 6), sharex=True)
-df.plot(x="time", y="soc",   ax=axes[0, 0], title="SOC",              ylabel="p.u.", legend=False)
-df.plot(x="time", y="v",     ax=axes[0, 1], title="Terminal voltage", ylabel="V",    legend=False)
-df.plot(x="time", y="i",     ax=axes[1, 0], title="Current",          ylabel="A",    legend=False)
-df.plot(x="time", y="power", ax=axes[1, 1], title="Delivered power",  ylabel="W",    legend=False)
+df.plot(x="time", y="soc", ax=axes[0, 0], title="SOC", ylabel="p.u.", legend=False)
+df.plot(x="time", y="v", ax=axes[0, 1], title="Terminal voltage", ylabel="V", legend=False)
+df.plot(x="time", y="i", ax=axes[1, 0], title="Current", ylabel="A", legend=False)
+df.plot(x="time", y="power", ax=axes[1, 1], title="Delivered power", ylabel="W", legend=False)
 for ax in axes.flat:
     ax.set_xlabel("time [s]")
 fig.tight_layout()

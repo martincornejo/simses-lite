@@ -45,9 +45,9 @@ class TwoSegmentEfficiency:
             eff_peak,
             eff_min + (eff_peak - eff_min) * (ac_pos / knee),
         )
-        dc_charge = ac_pos * eff                    # charging: DC = AC · eff
+        dc_charge = ac_pos * eff  # charging: DC = AC · eff
         ac_neg = -ac_pos[::-1]
-        dc_discharge = ac_neg / eff[::-1]           # discharging: DC = AC / eff
+        dc_discharge = ac_neg / eff[::-1]  # discharging: DC = AC / eff
 
         self._ac = np.concatenate([ac_neg[:-1], ac_pos]).tolist()
         self._dc = np.concatenate([dc_discharge[:-1], dc_charge]).tolist()
@@ -72,7 +72,7 @@ from simses.converter import Converter
 
 converter = Converter(
     loss_model=TwoSegmentEfficiency(),
-    max_power=100_000,     # W, rated
+    max_power=100_000,  # W, rated
     storage=battery,
 )
 ```
