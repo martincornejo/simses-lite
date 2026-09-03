@@ -48,7 +48,7 @@ flowchart TD
     A[AC setpoint in W] --> B[clamp to ±max_power]
     B --> C[ac_to_dc via loss model]
     C --> D[storage.step power_dc, dt]
-    D --> E{|power_dc − storage.power|<br/>&gt; 1% of |power_dc|?}
+    D --> E{"|power_dc − storage.power|<br/>&gt; 1% of |power_dc|?"}
     E -- no --> F[loss = power_ac − power_dc]
     E -- yes --> G[power_dc ← storage.power<br/>power_ac ← dc_to_ac power_dc]
     G --> F
